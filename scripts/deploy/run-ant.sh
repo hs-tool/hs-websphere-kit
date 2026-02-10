@@ -67,7 +67,20 @@ echo ""
 echo -e "  ${BOLD}Running: $target${NC}"
 echo ""
 
-run_ant_target "$target"
+(
+    cd "$DEPLOY_PATH" || exit 1
+    SUPERROOT=`pwd`/../../..
+    export CLASSPATH=.
+    for each in $SUPERROOT/3rdlibs/ant/*.jar; do
+        export CLASSPATH=$CLASSPATH:$each
+    done
+    export CLASSPATH=$CLASSPATH:$SUPERROOT/3rdlibs/commons-net-1.4.1.jar
+    export CLASSPATH=$CLASSPATH:$SUPERROOT/3rdlibs/jakarta-oro-2.0.8.jar
+    $JAVA_HOME/bin/java -ms64m -mx512m org.apache.tools.ant.Main -buildfile upgrade.xml "$target" 2> errlog.out
+    if [ $? -gt 0 ]; then
+        echo "An error occurred, see errlog.out"
+    fi
+)
 
 elapsed=$(( SECONDS - start_time ))
 minutes=$(( elapsed / 60 ))

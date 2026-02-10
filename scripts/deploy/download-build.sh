@@ -37,7 +37,7 @@ echo ""
 
 start_time=$SECONDS
 
-run_ant_target "get-release"
+run_deploy_script "getbuild.sh"
 
 elapsed=$(( SECONDS - start_time ))
 minutes=$(( elapsed / 60 ))

@@ -40,7 +40,7 @@ echo ""
 echo -e "  ${BOLD}Running full upgrade...${NC}"
 echo ""
 
-run_ant_target "upgrade-test"
+run_deploy_script "upgrade.sh"
 
 elapsed=$(( SECONDS - start_time ))
 minutes=$(( elapsed / 60 ))
