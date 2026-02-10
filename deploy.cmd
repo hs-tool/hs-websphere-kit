@@ -82,13 +82,13 @@ for %%S in (%SERVERS%) do (
         echo     FAILED: scp to %%S
         set /a FAIL_COUNT+=1
     ) else (
-        echo     Installing...
-        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh %REMOTETMP%/scripts/**/*.sh && sudo -u wasadmin bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP% /tmp/%TARBALL%"
+        echo     Preparing on server...
+        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL%"
         if errorlevel 1 (
-            echo     FAILED: install on %%S
+            echo     FAILED: prepare on %%S
             set /a FAIL_COUNT+=1
         ) else (
-            echo     Done
+            echo     [OK] Ready on %%S
         )
     )
 )
@@ -99,9 +99,16 @@ del /q "%REPOROOT%%TARBALL%" 2>nul
 echo.
 echo   ----------------------------------------
 if %FAIL_COUNT% equ 0 (
-    echo   Deployed v%VERSION% successfully.
+    echo   Uploaded v%VERSION% to all servers.
 ) else (
     echo   %FAIL_COUNT% server^(s^) failed.
     exit /b 1
 )
+echo.
+echo   Now SSH as wasadmin to each server and run:
+echo.
+echo     /tmp/build-toolkit-deploy/install.sh
+echo.
+echo   Or to clean up without installing:
+echo     rm -rf /tmp/build-toolkit-deploy
 echo.
