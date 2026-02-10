@@ -35,7 +35,7 @@ BEANSTORE_ROOT="/pcms/beanstore"
 WS_ADMIN_BIN="/home/wasadmin/pcms/release/server/websphere/bin"
 WS_ENV_NAME="D"
 
-HOME_DIR="/home/wasadmin/DCT"
+HOME_DIR="$TOOLKIT_ROOT"
 
 # --- Ant runner (matches upgrade.sh pattern exactly) ---
 # Each server script does the same thing: setup classpath, then:
