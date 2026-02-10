@@ -1,7 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
-set -euo pipefail
+set -uo pipefail
 
 # --- Colors ---
 GREEN='\033[1;32m'
@@ -26,11 +26,11 @@ get_build_version() {
 run_script() {
     local script="$SCRIPT_DIR/scripts/$1"
     if [[ ! -f "$script" ]]; then
-        echo -e "${RED}Script not found: $script${NC}"
-        return 1
+        echo -e "\n  ${RED}Script not found: $script${NC}"
+        return 0
     fi
     echo ""
-    "$script"
+    "$script" || echo -e "\n  ${RED}Script exited with error.${NC}"
 }
 
 show_banner() {
