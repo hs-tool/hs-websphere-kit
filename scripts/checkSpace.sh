@@ -1,2 +1,5 @@
+#!/bin/bash
+source "$(dirname "$0")/../config.sh"
+
 df -h
-cd /home/wasadmin/DCT
+cd "$HOME_DIR"

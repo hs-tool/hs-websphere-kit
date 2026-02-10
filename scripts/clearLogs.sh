@@ -1,16 +1,17 @@
 #!/bin/bash
+source "$(dirname "$0")/../config.sh"
 
 # Define the log files to empty
 LOG_FILES=(
-"/opt/was/profiles/JLUKCNDWASBS01_NDM/logs/dmgr/SystemOut.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NDM/logs/dmgr/SystemErr.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NDM/logs/dmgr/StartServer.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/BS_APPSRV_01/SystemOut.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/BS_APPSRV_01/SystemErr.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/BS_APPSRV_01/startServer.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/nodeagent/SystemOut.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/nodeagent/SystemErr.log"
-"/opt/was/profiles/JLUKCNDWASBS01_NODE01/logs/nodeagent/startServer.log"
+"$NDM_PROFILE/logs/dmgr/SystemOut.log"
+"$NDM_PROFILE/logs/dmgr/SystemErr.log"
+"$NDM_PROFILE/logs/dmgr/StartServer.log"
+"$NODE_PROFILE/logs/$APP_SERVER/SystemOut.log"
+"$NODE_PROFILE/logs/$APP_SERVER/SystemErr.log"
+"$NODE_PROFILE/logs/$APP_SERVER/startServer.log"
+"$NODE_PROFILE/logs/nodeagent/SystemOut.log"
+"$NODE_PROFILE/logs/nodeagent/SystemErr.log"
+"$NODE_PROFILE/logs/nodeagent/startServer.log"
 )
 
 # Loop through the files and truncate them

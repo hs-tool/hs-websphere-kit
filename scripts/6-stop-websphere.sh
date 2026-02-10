@@ -1,5 +1,8 @@
-cd /opt/was/profiles/JLUKCNDWASBS01_NDM/bin
+#!/bin/bash
+source "$(dirname "$0")/../config.sh"
+
+cd "$NDM_PROFILE/bin"
 ./stopManager.sh
-cd /opt/was/profiles/JLUKCNDWASBS01_NODE01/bin
+cd "$NODE_PROFILE/bin"
 ./stopNode.sh
-cd /home/wasadmin/DCT
+cd "$HOME_DIR"

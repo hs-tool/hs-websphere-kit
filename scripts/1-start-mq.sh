@@ -1,5 +1,8 @@
-password="mqmuser"
-su -c "cd /opt/mqm/bin/ && ./strmqm INT_QM" mqmuser <<EOF
+#!/bin/bash
+source "$(dirname "$0")/../config.sh"
+
+password="$MQ_USER"
+su -c "cd /opt/mqm/bin/ && ./strmqm $MQ_QM" "$MQ_USER" <<EOF
 $password
 EOF
 ps -ef | grep websphere
@@ -19,4 +22,4 @@ if [[ $portNumber =~ ^[0-9]+$ ]]; then
 else
     echo "Invalid port number. Please enter a valid numeric port number."
 fi
-cd /home/wasadmin/DCT
+cd "$HOME_DIR"

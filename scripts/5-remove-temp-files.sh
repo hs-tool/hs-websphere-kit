@@ -1,17 +1,20 @@
-sudo rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/temp/download/*
-sudo rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/wstemp/*
-sudo rm -r /opt/was/profiles/JLUKCNDWASBS01_NODE01/wstemp/*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/applications/wtr*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/applications/ESI*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/applications/ESP*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/applications/JLP*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/cus/JLP*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/cus/ESP*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/cus/ESI*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/cus/wtr*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/blas/wtr*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/blas/ESI*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/blas/ESP*
-  rm -r /opt/was/profiles/JLUKCNDWASBS01_NDM/config/cells/BS_Cell/blas/JLP*
+#!/bin/bash
+source "$(dirname "$0")/../config.sh"
+
+sudo rm -r "$NDM_PROFILE/config/temp/download/"*
+sudo rm -r "$NDM_PROFILE/wstemp/"*
+sudo rm -r "$NODE_PROFILE/wstemp/"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/applications/wtr"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/applications/ESI"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/applications/ESP"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/applications/JLP"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/cus/JLP"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/cus/ESP"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/cus/ESI"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/cus/wtr"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/blas/wtr"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/blas/ESI"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/blas/ESP"*
+  rm -r "$NDM_PROFILE/config/cells/$CELL_NAME/blas/JLP"*
 df -h
-cd /home/wasadmin/DCT
+cd "$HOME_DIR"

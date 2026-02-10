@@ -1,3 +1,6 @@
-cd /pcms/beanstore/util/deploy/server/
+#!/bin/bash
+source "$(dirname "$0")/../config.sh"
+
+cd "$DEPLOY_PATH"
 ./upgrade.sh
-cd /home/wasadmin/DCT
+cd "$HOME_DIR"
