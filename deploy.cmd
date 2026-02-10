@@ -13,6 +13,8 @@ setlocal enabledelayedexpansion
 set "PROJECT=john-lewis-partnership-190122"
 set "ZONE=europe-west1-b"
 set "PREFIX=/home/wasadmin/toolkit"
+set "SVC_USER=wasadmin"
+set "SVC_PASS=wasadmin"
 set "REPOROOT=%~dp0"
 set /p VERSION=<"%REPOROOT%VERSION"
 set "TARBALL=build-toolkit-%VERSION%.tar.gz"
@@ -82,13 +84,13 @@ for %%S in (%SERVERS%) do (
         echo     FAILED: scp to %%S
         set /a FAIL_COUNT+=1
     ) else (
-        echo     Preparing on server...
-        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL%"
+        echo     Installing as %SVC_USER%...
+        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP%"
         if errorlevel 1 (
-            echo     FAILED: prepare on %%S
+            echo     FAILED: install on %%S
             set /a FAIL_COUNT+=1
         ) else (
-            echo     [OK] Ready on %%S
+            echo     [OK] Done
         )
     )
 )
@@ -99,16 +101,9 @@ del /q "%REPOROOT%%TARBALL%" 2>nul
 echo.
 echo   ----------------------------------------
 if %FAIL_COUNT% equ 0 (
-    echo   Uploaded v%VERSION% to all servers.
+    echo   Deployed v%VERSION% successfully.
 ) else (
     echo   %FAIL_COUNT% server^(s^) failed.
     exit /b 1
 )
-echo.
-echo   Now SSH as wasadmin to each server and run:
-echo.
-echo     /tmp/build-toolkit-deploy/install.sh
-echo.
-echo   Or to clean up without installing:
-echo     rm -rf /tmp/build-toolkit-deploy
 echo.
