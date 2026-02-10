@@ -4,13 +4,12 @@ source "$SCRIPT_DIR/config.sh"
 set -uo pipefail
 
 # --- Colors ---
-GREEN='\033[92m'
-RED='\033[91m'
-YELLOW='\033[93m'
-CYAN='\033[96m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 BLUE='\033[94m'
 MAGENTA='\033[95m'
-WHITE='\033[97m'
 BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
