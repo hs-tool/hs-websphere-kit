@@ -77,13 +77,13 @@ for %%S in (%SERVERS%) do (
     echo   [%%S] Deploying v%VERSION%...
 
     echo     Copying tarball...
-    gcloud compute scp "%REPOROOT%%TARBALL%" "wasadmin@%%S:/tmp/%TARBALL%" --project=%PROJECT% --zone=%ZONE% --quiet
+    gcloud compute scp "%REPOROOT%%TARBALL%" "%%S:/tmp/%TARBALL%" --project=%PROJECT% --zone=%ZONE% --quiet
     if errorlevel 1 (
         echo     FAILED: scp to %%S
         set /a FAIL_COUNT+=1
     ) else (
         echo     Installing...
-        gcloud compute ssh "wasadmin@%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP% /tmp/%TARBALL%"
+        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh %REMOTETMP%/scripts/**/*.sh && sudo -u wasadmin bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP% /tmp/%TARBALL%"
         if errorlevel 1 (
             echo     FAILED: install on %%S
             set /a FAIL_COUNT+=1
