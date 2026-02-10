@@ -104,7 +104,7 @@ menu_deploy() {
     while true; do
         show_banner
         BUILD_VER=$(get_build_version)
-        echo -e "  ${BOLD}${BRIGHT_BLUE}BUILD & DEPLOY${NC}"
+        echo -e "  ${BOLD}${CYAN}BUILD & DEPLOY${NC}"
         echo ""
         echo -e "   ${BOLD}1${NC}  Set Build Version  ${DIM}(current: $BUILD_VER)${NC}"
         echo -e "   ${BOLD}2${NC}  Download Build     ${DIM}(FTP only)${NC}"
@@ -140,7 +140,7 @@ menu_deploy() {
 menu_maintenance() {
     while true; do
         show_banner
-        echo -e "  ${BOLD}${BRIGHT_MAGENTA}MAINTENANCE${NC}"
+        echo -e "  ${BOLD}${BRIGHT_WHITE}MAINTENANCE${NC}"
         echo ""
         echo -e "   ${BOLD}1${NC}  Clear Logs"
         echo -e "   ${BOLD}2${NC}  Remove Temp Files"
@@ -191,8 +191,8 @@ menu_diagnostics() {
 while true; do
     show_banner
     echo -e "   ${BOLD}1${NC}  ${GREEN}Services${NC}           ${DIM}(MQ, WebSphere, App Server)${NC}"
-    echo -e "   ${BOLD}2${NC}  ${BLUE}Build & Deploy${NC}     ${DIM}(upgrade, FTP, Ant, deploy)${NC}"
-    echo -e "   ${BOLD}3${NC}  ${MAGENTA}Maintenance${NC}        ${DIM}(logs, disk, permissions)${NC}"
+    echo -e "   ${BOLD}2${NC}  ${CYAN}Build & Deploy${NC}     ${DIM}(upgrade, FTP, Ant, deploy)${NC}"
+    echo -e "   ${BOLD}3${NC}  ${BRIGHT_WHITE}Maintenance${NC}        ${DIM}(logs, disk, permissions)${NC}"
     echo -e "   ${BOLD}4${NC}  ${YELLOW}Diagnostics${NC}        ${DIM}(tail logs, kill procs)${NC}"
     echo ""
     echo -e "   ${BOLD}0${NC}  Exit"
