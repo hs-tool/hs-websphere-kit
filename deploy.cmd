@@ -14,6 +14,7 @@ set "PROJECT=john-lewis-partnership-190122"
 set "ZONE=europe-west1-b"
 set "PREFIX=/home/wasadmin/toolkit"
 set "SVC_USER=wasadmin"
+set "SVC_PASS=wasadmin"
 set "REPOROOT=%~dp0"
 set /p VERSION=<"%REPOROOT%VERSION"
 set "TARBALL=build-toolkit-%VERSION%.tar.gz"
@@ -84,7 +85,7 @@ for %%S in (%SERVERS%) do (
         set /a FAIL_COUNT+=1
     ) else (
         echo     Installing as %SVC_USER%...
-        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && sudo -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && sudo ln -sf %PREFIX%/menu.sh /usr/local/bin/toolkit && rm -rf %REMOTETMP%"
+        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && echo %SVC_PASS% | sudo -S ln -sf %PREFIX%/menu.sh /usr/local/bin/toolkit && rm -rf %REMOTETMP%"
         if errorlevel 1 (
             echo     FAILED: install on %%S
             set /a FAIL_COUNT+=1
