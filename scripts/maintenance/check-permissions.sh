@@ -10,14 +10,26 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-EXPECTED="${WAS_USER}:${WAS_GROUP}"
+ACCEPTED_GROUPS=("${WAS_GROUP}" "users")
 issues=0
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Permission Audit ===${NC}"
-echo -e "  Expected owner: ${BOLD}$EXPECTED${NC}"
+echo -e "  Expected owner: ${BOLD}${WAS_USER}${NC} with group ${BOLD}${WAS_GROUP}${NC} or ${BOLD}users${NC}"
 echo -e "  Server:         ${YELLOW}$SERVER_NAME${NC}"
 echo ""
+
+is_ok_owner() {
+    local file="$1"
+    local owner group
+    owner=$(stat -c '%U' "$file" 2>/dev/null || echo "unknown")
+    group=$(stat -c '%G' "$file" 2>/dev/null || echo "unknown")
+    [[ "$owner" == "$WAS_USER" ]] || return 1
+    for g in "${ACCEPTED_GROUPS[@]}"; do
+        [[ "$group" == "$g" ]] && return 0
+    done
+    return 1
+}
 
 for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
     label=$(basename "$profile_dir")
@@ -25,20 +37,23 @@ for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
 
     # Check top-level directory
     top_owner=$(stat -c '%U:%G' "$profile_dir" 2>/dev/null || echo "unknown")
-    if [[ "$top_owner" != "$EXPECTED" ]]; then
+    if is_ok_owner "$profile_dir"; then
+        echo -e "  ${GREEN}root dir:  $top_owner${NC}"
+    else
         echo -e "  ${RED}root dir:  $top_owner${NC}"
         ((issues++))
-    else
-        echo -e "  ${GREEN}root dir:  $top_owner${NC}"
     fi
 
-    # Scan for any files/dirs NOT owned by expected user (sample up to 500)
-    bad_count=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -500 | wc -l)
+    # Scan for files NOT owned by wasadmin with an accepted group
+    bad_files=()
+    while IFS= read -r f; do
+        is_ok_owner "$f" || bad_files+=("$f")
+    done < <(find "$profile_dir" -maxdepth 3 2>/dev/null | head -500)
 
+    bad_count=${#bad_files[@]}
     if (( bad_count > 0 )); then
         echo -e "  ${RED}$bad_count items with wrong ownership (top 3 levels)${NC}"
-        # Show up to 5 examples
-        find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -5 | while read -r f; do
+        for f in "${bad_files[@]:0:5}"; do
             f_owner=$(stat -c '%U:%G' "$f" 2>/dev/null || echo "?")
             echo -e "    ${DIM}$f_owner${NC}  ${DIM}$f${NC}"
         done
