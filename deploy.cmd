@@ -16,10 +16,31 @@ set "PREFIX=/home/wasadmin/toolkit"
 set "SVC_USER=wasadmin"
 set "SVC_PASS=wasadmin"
 set "REPOROOT=%~dp0"
-set /p VERSION=<"%REPOROOT%VERSION"
-set "TARBALL=build-toolkit-%VERSION%.tar.gz"
 set "DISTDIR=%REPOROOT%build-toolkit"
 set "REMOTETMP=/tmp/build-toolkit-deploy"
+
+:: --- Auto-increment patch version ---
+set /p OLD_VERSION=<"%REPOROOT%VERSION"
+for /f "tokens=1-3 delims=." %%A in ("%OLD_VERSION%") do (
+    set "MAJOR=%%A"
+    set "MINOR=%%B"
+    set /a "PATCH=%%C+1"
+)
+set "VERSION=%MAJOR%.%MINOR%.%PATCH%"
+echo %VERSION%> "%REPOROOT%VERSION"
+set "TARBALL=build-toolkit-%VERSION%.tar.gz"
+
+echo.
+echo   Version: %OLD_VERSION% -^> %VERSION%
+
+:: --- Git commit + tag ---
+pushd "%REPOROOT%"
+git add VERSION
+git commit -m "Bump version to %VERSION%"
+git tag v%VERSION%
+git push
+git push --tags
+popd
 
 :: --- Server inventory ---
 set "ALL_SERVERS=jukcgsb01 jukcndwasb01 jukcnewasb01 wtukcwasbs01 wtukcwasbs02 wtukcfwasbs01"

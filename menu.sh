@@ -14,6 +14,16 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+BRIGHT_BLACK='\033[0;90m'
+BRIGHT_RED='\033[0;91m'
+BRIGHT_GREEN='\033[0;92m'
+BRIGHT_YELLOW='\033[0;93m'
+BRIGHT_BLUE='\033[0;94m'
+BRIGHT_MAGENTA='\033[0;95m'
+BRIGHT_CYAN='\033[0;96m'
+BRIGHT_WHITE='\033[0;97m'
+
+
 get_build_version() {
     if [[ -f "$DEPLOY_OVERRIDE" ]]; then
         grep -E "^project\.name=" "$DEPLOY_OVERRIDE" 2>/dev/null | tail -1 | cut -d'=' -f2
@@ -32,9 +42,18 @@ run_script() {
     "$script" || echo -e "\n  ${RED}Script exited with error.${NC}"
 }
 
+get_toolkit_version() {
+    if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
+        cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]'
+    else
+        echo "?"
+    fi
+}
+
 show_banner() {
     clear
     BUILD_VER=$(get_build_version)
+    TK_VER=$(get_toolkit_version)
     echo ""
     echo -en "${BOLD}${CYAN}"
     sed -n '1,6s/^/  /p' "$SCRIPT_DIR/banner.txt"
@@ -42,7 +61,7 @@ show_banner() {
     sed -n '7,12s/^/  /p' "$SCRIPT_DIR/banner.txt"
     echo -e "${NC}"
     echo -e "  ${DIM}Developed by Hafiz Syed Muhammad Usman${NC}"
-    echo -e "  ${BOLD}Server: ${YELLOW}$SERVER_NAME${NC}    ${BOLD}Build: ${YELLOW}$BUILD_VER${NC}"
+    echo -e "  ${BOLD}Server: ${YELLOW}$SERVER_NAME${NC}    ${BOLD}Build: ${YELLOW}$BUILD_VER${NC}    ${BOLD}Toolkit: ${CYAN}v$TK_VER${NC}"
     echo ""
 }
 
@@ -84,7 +103,7 @@ menu_deploy() {
     while true; do
         show_banner
         BUILD_VER=$(get_build_version)
-        echo -e "  ${BOLD}${BLUE}BUILD & DEPLOY${NC}"
+        echo -e "  ${BOLD}${BRIGHT_BLUE}BUILD & DEPLOY${NC}"
         echo ""
         echo -e "   ${BOLD}1${NC}  Set Build Version  ${DIM}(current: $BUILD_VER)${NC}"
         echo -e "   ${BOLD}2${NC}  Download Build     ${DIM}(FTP only)${NC}"
@@ -120,7 +139,7 @@ menu_deploy() {
 menu_maintenance() {
     while true; do
         show_banner
-        echo -e "  ${BOLD}${MAGENTA}MAINTENANCE${NC}"
+        echo -e "  ${BOLD}${BRIGHT_MAGENTA}MAINTENANCE${NC}"
         echo ""
         echo -e "   ${BOLD}1${NC}  Clear Logs"
         echo -e "   ${BOLD}2${NC}  Remove Temp Files"
