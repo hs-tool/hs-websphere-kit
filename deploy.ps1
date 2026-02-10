@@ -26,14 +26,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Server inventory ---
-$AllServers = @(
-    "jukcgsb01"
-    "jukcndwasb01"
-    "jukcnewasb01"
-    "wtukcwasbs01"
-    "wtukcwasbs02"
-    "wtukcfwasbs01"
-)
+$AllServers = @("jukcgsb01", "jukcndwasb01", "jukcnewasb01", "wtukcwasbs01", "wtukcwasbs02", "wtukcfwasbs01")
 
 if ($All) {
     $Servers = $AllServers
@@ -58,14 +51,19 @@ $RemoteTmp = "/tmp/build-toolkit-deploy"
 
 # --- Build tarball ---
 Write-Host "`n  Building $Tarball..." -ForegroundColor Cyan
+$DistDir = Join-Path $RepoRoot "build-toolkit"
+if (Test-Path $DistDir) { Remove-Item $DistDir -Recurse -Force }
+New-Item $DistDir -ItemType Directory | Out-Null
+$FilesToCopy = @("config.sh", "menu.sh", "banner.txt", "install.sh", "uninstall.sh", "VERSION")
+foreach ($f in $FilesToCopy) { Copy-Item (Join-Path $RepoRoot $f) $DistDir }
+Copy-Item (Join-Path $RepoRoot "scripts") $DistDir -Recurse
 Push-Location $RepoRoot
 try {
-    make dist
-    if (-not (Test-Path $Tarball)) {
-        throw "make dist did not produce $Tarball"
-    }
+    tar czf $Tarball "build-toolkit"
+    if (-not (Test-Path $Tarball)) { throw "tar failed to produce $Tarball" }
 }
 finally { Pop-Location }
+Remove-Item $DistDir -Recurse -Force
 
 # --- Build gcloud common args ---
 $GcloudArgs = @("--project=$Project")
