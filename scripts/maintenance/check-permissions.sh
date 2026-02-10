@@ -41,7 +41,7 @@ for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
         echo -e "  ${GREEN}root dir:  $top_owner${NC}"
     else
         echo -e "  ${RED}root dir:  $top_owner${NC}"
-        ((issues++))
+        ((issues++)) || true
     fi
 
     # Scan for files NOT owned by wasadmin with an accepted group

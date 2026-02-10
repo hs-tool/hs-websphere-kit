@@ -18,7 +18,7 @@ TOTAL_START=$SECONDS
 run_phase() {
     local script="$1"
     local label="$2"
-    ((CURRENT_PHASE++))
+    ((CURRENT_PHASE++)) || true
 
     local phase_start=$SECONDS
     echo ""
