@@ -4,11 +4,23 @@ setlocal enabledelayedexpansion
 :: ============================================================
 :: deploy.cmd — Deploy toolkit to GCP servers via CMD
 :: ============================================================
-:: Usage:
-::   deploy jukcndwasb01
-::   deploy jukcndwasb01 jukcnewasb01
+:: Run without arguments for interactive menu, or pass servers:
+::   deploy
+::   deploy JLUKCNDWASBS01
 ::   deploy --all
 :: ============================================================
+
+:: --- ANSI colors ---
+for /f %%E in ('echo prompt $E ^| cmd') do set "ESC=%%E"
+set "GREEN=%ESC%[92m"
+set "CYAN=%ESC%[96m"
+set "YELLOW=%ESC%[93m"
+set "RED=%ESC%[91m"
+set "WHITE=%ESC%[97m"
+set "MAGENTA=%ESC%[95m"
+set "BOLD=%ESC%[1m"
+set "DIM=%ESC%[2m"
+set "NC=%ESC%[0m"
 
 set "PROJECT=john-lewis-partnership-190122"
 set "ZONE=europe-west1-b"
@@ -30,41 +42,69 @@ set "VERSION=%MAJOR%.%MINOR%.%PATCH%"
 echo %VERSION%> "%REPOROOT%VERSION"
 set "TARBALL=build-toolkit-%VERSION%.tar.gz"
 
-echo.
-echo   Version: %OLD_VERSION% -^> %VERSION%
-
 :: --- Server inventory ---
-set "ALL_SERVERS=jukcgsb01 jukcndwasb01 jukcnewasb01 wtukcwasbs01 wtukcwasbs02 wtukcfwasbs01"
+set "S1=jlkcndgbs01"
+set "S2=jlukcndwasbs01"
+set "S3=jlukcnewasbs01"
+set "S4=wtukcewasbs01"
+set "S5=wtukcewasbs02"
+set "S6=wtukcfwasbs01"
+set "ALL_SERVERS=%S1% %S2% %S3% %S4% %S5% %S6%"
 
-:: --- Parse args ---
-set "SERVERS="
-if "%~1"=="" goto :usage
-if "%~1"=="--all" (
+:: --- If args provided, use them directly ---
+if not "%~1"=="" (
+    if "%~1"=="--all" (
+        set "SERVERS=%ALL_SERVERS%"
+        goto :build
+    )
+    set "SERVERS="
+    :parse_args
+    if "%~1"=="" goto :build
+    set "SERVERS=!SERVERS! %~1"
+    shift
+    goto :parse_args
+)
+
+:: --- Interactive menu ---
+:menu
+cls
+echo.
+echo   %BOLD%%MAGENTA%Deploy Toolkit%NC%    %DIM%v%OLD_VERSION% -^> v%VERSION%%NC%
+echo   %DIM%------------------%NC%
+echo.
+echo     %BOLD%1%NC%  %WHITE%%S1%%NC%
+echo     %BOLD%2%NC%  %WHITE%%S2%%NC%
+echo     %BOLD%3%NC%  %WHITE%%S3%%NC%
+echo     %BOLD%4%NC%  %WHITE%%S4%%NC%
+echo     %BOLD%5%NC%  %WHITE%%S5%%NC%
+echo     %BOLD%6%NC%  %WHITE%%S6%%NC%
+echo.
+echo     %BOLD%7%NC%  %GREEN%All servers%NC%
+echo     %BOLD%0%NC%  %DIM%Exit%NC%
+echo.
+set /p "choice=  %BOLD%Select server:%NC% "
+
+if "%choice%"=="0" exit /b 0
+if "%choice%"=="7" (
     set "SERVERS=%ALL_SERVERS%"
     goto :build
 )
-:parse_args
-if "%~1"=="" goto :build
-set "SERVERS=!SERVERS! %~1"
-shift
-goto :parse_args
+if "%choice%"=="1" set "SERVERS=%S1%"& goto :build
+if "%choice%"=="2" set "SERVERS=%S2%"& goto :build
+if "%choice%"=="3" set "SERVERS=%S3%"& goto :build
+if "%choice%"=="4" set "SERVERS=%S4%"& goto :build
+if "%choice%"=="5" set "SERVERS=%S5%"& goto :build
+if "%choice%"=="6" set "SERVERS=%S6%"& goto :build
 
-:usage
 echo.
-echo   Usage:
-echo     deploy jukcndwasb01                          single server
-echo     deploy jukcndwasb01 jukcnewasb01             multiple servers
-echo     deploy --all                                 all servers
-echo.
-echo   Available servers:
-for %%S in (%ALL_SERVERS%) do echo     %%S
-echo.
-exit /b 1
+echo   %RED%Invalid option.%NC%
+timeout /t 1 >nul
+goto :menu
 
 :build
 :: --- Build tarball ---
 echo.
-echo   Building %TARBALL%...
+echo   %BOLD%%CYAN%Building %TARBALL%...%NC%
 
 if exist "%DISTDIR%" rmdir /s /q "%DISTDIR%"
 mkdir "%DISTDIR%"
@@ -79,43 +119,53 @@ popd
 rmdir /s /q "%DISTDIR%"
 
 if not exist "%REPOROOT%%TARBALL%" (
-    echo   ERROR: Failed to create tarball.
+    echo   %RED%ERROR: Failed to create tarball.%NC%
     exit /b 1
 )
-echo   [OK] %TARBALL%
+echo   %GREEN%[OK]%NC% %TARBALL%
 
 :: --- Deploy to each server ---
 set "FAIL_COUNT=0"
-for %%S in (%SERVERS%) do (
-    echo.
-    echo   [%%S] Deploying v%VERSION%...
+for %%S in (%SERVERS%) do call :deploy_server %%S
+goto :results
 
-    echo     Copying tarball...
-    gcloud compute scp "%REPOROOT%%TARBALL%" "%%S:/tmp/%TARBALL%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
-    if errorlevel 1 (
-        echo     FAILED: scp to %%S
-        set /a FAIL_COUNT+=1
-    ) else (
-        echo     Installing as %SVC_USER%...
-        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP%"
-        if errorlevel 1 (
-            echo     FAILED: install on %%S
-            set /a FAIL_COUNT+=1
-        ) else (
-            echo     [OK] Done
-        )
-    )
-)
+:: --- Per-server subroutine (no parenthesized blocks around gcloud) ---
+:deploy_server
+set "SRV=%~1"
+echo.
+echo   %BOLD%%YELLOW%[%SRV%]%NC% Deploying v%VERSION%...
 
+echo     %DIM%Copying tarball...%NC%
+call gcloud compute scp "%REPOROOT%%TARBALL%" "%SRV%:/tmp/%TARBALL%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
+if errorlevel 1 goto :dep_scp_fail
+
+echo     %DIM%Installing as %SVC_USER%...%NC%
+call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP%"
+if errorlevel 1 goto :dep_ssh_fail
+
+echo     %GREEN%[OK] Done%NC%
+goto :eof
+
+:dep_scp_fail
+echo     %RED%FAILED: scp to %SRV%%NC%
+set /a FAIL_COUNT+=1
+goto :eof
+
+:dep_ssh_fail
+echo     %RED%FAILED: install on %SRV%%NC%
+set /a FAIL_COUNT+=1
+goto :eof
+
+:results
 :: --- Cleanup ---
 del /q "%REPOROOT%%TARBALL%" 2>nul
 
 echo.
-echo   ----------------------------------------
+echo   %DIM%----------------------------------------%NC%
 if %FAIL_COUNT% equ 0 (
-    echo   Deployed v%VERSION% successfully.
+    echo   %GREEN%%BOLD%Deployed v%VERSION% successfully.%NC%
 ) else (
-    echo   %FAIL_COUNT% server^(s^) failed.
+    echo   %RED%%BOLD%%FAIL_COUNT% server^(s^) failed.%NC%
     exit /b 1
 )
 echo.
