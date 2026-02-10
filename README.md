@@ -15,18 +15,27 @@ Interactive CLI toolkit for managing WebSphere Application Server, IBM MQ, and B
 
 All paths and identifiers are auto-detected from the server hostname via `config.sh` — no per-server editing required.
 
-## Install
+## Deploy to GCP Servers
+
+From PowerShell on your dev machine:
+
+```powershell
+# Single server
+.\deploy.ps1 JLUKCNDWASBS01
+
+# Multiple servers at once
+.\deploy.ps1 JLUKCNDWASBS01,JLUKCNDWASBS02
+
+# With explicit zone/project
+.\deploy.ps1 JLUKCNDWASBS01 -Zone europe-west2-a -Project my-gcp-project
+```
+
+This builds the tarball, copies it via `gcloud compute scp`, runs the installer over SSH, and cleans up.
+
+### Install on servers with internet access
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hs-tool/hs-websphere-kit/main/get-toolkit.sh | bash
-```
-
-That's it. The script downloads the latest release, extracts it, runs the installer, and cleans up.
-
-### Custom install path
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hs-tool/hs-websphere-kit/main/get-toolkit.sh | bash -s -- --prefix /opt/toolkit
 ```
 
 ### Default install path
@@ -38,8 +47,8 @@ curl -fsSL https://raw.githubusercontent.com/hs-tool/hs-websphere-kit/main/get-t
 The installer:
 - Verifies `wasadmin` user exists
 - Backs up any existing installation before overwriting
-- Locks permissions to `wasadmin:wasadmin` only (700 dirs/scripts, 600 data)
-- Creates `/usr/local/bin/toolkit` symlink
+- Locks permissions to 700 dirs/scripts, 600 data
+- Creates `/usr/local/bin/toolkit` symlink (if writable)
 
 ## Usage
 
@@ -66,6 +75,7 @@ banner.txt          # ASCII banner
 VERSION             # Semver version string
 install.sh          # Production installer
 uninstall.sh        # Clean removal
+deploy.ps1          # GCP deploy (gcloud scp + ssh)
 Makefile            # dist / release / clean targets
 scripts/
   services/         # MQ, WebSphere, App Server start/stop/restart/status
