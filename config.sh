@@ -2,13 +2,13 @@
 # ============================================================
 # Server Configuration — Single Source of Truth
 # ============================================================
-# Change SERVER_NAME to match your target server.
+# SERVER_NAME is auto-detected from the machine hostname.
 # All paths and identifiers are derived from this value.
 # ============================================================
 
 TOOLKIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SERVER_NAME="JLUKCNDWASBS01"
+SERVER_NAME="$(hostname)"
 
 # --- Derived paths (no need to edit below this line) ---
 WAS_BASE="/opt/was/profiles"
