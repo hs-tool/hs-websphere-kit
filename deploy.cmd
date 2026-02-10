@@ -33,15 +33,6 @@ set "TARBALL=build-toolkit-%VERSION%.tar.gz"
 echo.
 echo   Version: %OLD_VERSION% -^> %VERSION%
 
-:: --- Git commit + tag ---
-pushd "%REPOROOT%"
-git add VERSION
-git commit -m "Bump version to %VERSION%"
-git tag v%VERSION%
-git push
-git push --tags
-popd
-
 :: --- Server inventory ---
 set "ALL_SERVERS=jukcgsb01 jukcndwasb01 jukcnewasb01 wtukcwasbs01 wtukcwasbs02 wtukcfwasbs01"
 
