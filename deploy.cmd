@@ -43,7 +43,7 @@ echo %VERSION%> "%REPOROOT%VERSION"
 set "TARBALL=build-toolkit-%VERSION%.tar.gz"
 
 :: --- Server inventory ---
-set "S1=jlkcndgbs01"
+set "S1=jlukcgbs01"
 set "S2=jlukcndwasbs01"
 set "S3=jlukcnewasbs01"
 set "S4=wtukcewasbs01"

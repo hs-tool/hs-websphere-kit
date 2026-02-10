@@ -28,7 +28,7 @@ set "LOGDIR=%REPOROOT%downloaded-logs"
 set "HELPER=%REPOROOT%scripts\remote\package-logs.sh"
 
 :: --- Server inventory ---
-set "S1=jlkcndgbs01"
+set "S1=jlukcgbs01"
 set "S2=jlukcndwasbs01"
 set "S3=jlukcnewasbs01"
 set "S4=wtukcewasbs01"
