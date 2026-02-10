@@ -80,14 +80,9 @@ if [[ ! -d "$SOURCE_DIR/scripts" ]]; then
 fi
 echo -e "  ${GREEN}[OK]${NC} Source files verified"
 
-# --- Backup existing installation ---
+# --- Clean existing installation ---
 if [[ -d "$INSTALL_PREFIX" ]]; then
-    BACKUP="${INSTALL_PREFIX}.bak.$(date +%Y%m%d%H%M%S)"
-    echo ""
-    echo -e "${YELLOW}Existing installation found at ${INSTALL_PREFIX}${NC}"
-    echo -e "  Backing up to ${BACKUP}"
-    mv "$INSTALL_PREFIX" "$BACKUP"
-    echo -e "  ${GREEN}[OK]${NC} Backup created"
+    rm -rf "$INSTALL_PREFIX"
 fi
 
 # --- Install ---
