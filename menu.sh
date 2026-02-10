@@ -4,13 +4,12 @@ source "$SCRIPT_DIR/config.sh"
 set -uo pipefail
 
 # --- Colors ---
-GREEN='\033[1;32m'
-RED='\033[1;31m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
 YELLOW='\033[1;33m'
-CYAN='\033[1;36m'
-BLUE='\033[1;34m'
-MAGENTA='\033[1;35m'
-WHITE='\033[1;37m'
+CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
@@ -171,10 +170,10 @@ menu_diagnostics() {
 # --- Main menu ---
 while true; do
     show_banner
-    echo -e "   ${BOLD}1${NC}  ${GREEN}Services${NC}           ${WHITE}(MQ, WebSphere, App Server)${NC}"
-    echo -e "   ${BOLD}2${NC}  ${BLUE}Build & Deploy${NC}     ${WHITE}(upgrade, FTP, Ant, deploy)${NC}"
-    echo -e "   ${BOLD}3${NC}  ${MAGENTA}Maintenance${NC}        ${WHITE}(logs, disk, permissions)${NC}"
-    echo -e "   ${BOLD}4${NC}  ${YELLOW}Diagnostics${NC}        ${WHITE}(tail logs, kill procs)${NC}"
+    echo -e "   ${BOLD}1${NC}  ${GREEN}Services${NC}           ${DIM}(MQ, WebSphere, App Server)${NC}"
+    echo -e "   ${BOLD}2${NC}  ${BLUE}Build & Deploy${NC}     ${DIM}(upgrade, FTP, Ant, deploy)${NC}"
+    echo -e "   ${BOLD}3${NC}  ${MAGENTA}Maintenance${NC}        ${DIM}(logs, disk, permissions)${NC}"
+    echo -e "   ${BOLD}4${NC}  ${YELLOW}Diagnostics${NC}        ${DIM}(tail logs, kill procs)${NC}"
     echo ""
     echo -e "   ${BOLD}0${NC}  Exit"
     echo ""
