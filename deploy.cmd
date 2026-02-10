@@ -85,7 +85,7 @@ for %%S in (%SERVERS%) do (
         set /a FAIL_COUNT+=1
     ) else (
         echo     Installing as %SVC_USER%...
-        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && rm -rf %REMOTETMP%"
+        gcloud compute ssh "%%S" --project=%PROJECT% --zone=%ZONE% --quiet --command="set -e && rm -rf %REMOTETMP% && mkdir -p %REMOTETMP% && tar xzf /tmp/%TARBALL% -C %REMOTETMP% --strip-components=1 && chmod -R +x %REMOTETMP%/*.sh && find %REMOTETMP%/scripts -name '*.sh' -exec chmod +x {} + && rm -f /tmp/%TARBALL% && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash %REMOTETMP%/install.sh --prefix %PREFIX% && echo %SVC_PASS% | sudo -S ln -sf %PREFIX%/menu.sh /usr/local/bin/toolkit && rm -rf %REMOTETMP%"
         if errorlevel 1 (
             echo     FAILED: install on %%S
             set /a FAIL_COUNT+=1

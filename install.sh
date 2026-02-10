@@ -8,11 +8,13 @@ set -euo pipefail
 # Default: /home/wasadmin/toolkit
 # ============================================================
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-NC='\033[0m'
+# Colors only when running in a real terminal
+if [[ -t 1 ]]; then
+    RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+    BOLD='\033[1m'; NC='\033[0m'
+else
+    RED=''; GREEN=''; YELLOW=''; BOLD=''; NC=''
+fi
 
 INSTALL_PREFIX="/home/wasadmin/toolkit"
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -49,7 +51,7 @@ fi
 
 echo ""
 echo -e "${BOLD}HS WebSphere Toolkit Installer v${VERSION}${NC}"
-echo -e "────────────────────────────────────────────"
+echo "--------------------------------------------"
 echo ""
 
 # --- Pre-flight checks ---
@@ -109,13 +111,8 @@ echo -e "  ${GREEN}[OK]${NC} Files copied"
 # --- Lock down permissions ---
 echo -e "${BOLD}Locking down permissions...${NC}"
 
-# Directories: 700 (rwx------)
 find "$INSTALL_PREFIX" -type d -exec chmod 700 {} +
-
-# Scripts and config: 700 (rwx------)
 find "$INSTALL_PREFIX" -type f -name "*.sh" -exec chmod 700 {} +
-
-# Non-script files (banner.txt, VERSION): 600 (rw-------)
 find "$INSTALL_PREFIX" -type f ! -name "*.sh" -exec chmod 600 {} +
 
 echo -e "  ${GREEN}[OK]${NC} Permissions: 700 dirs/scripts, 600 data"
@@ -127,18 +124,17 @@ SYMLINK="/usr/local/bin/toolkit"
 if ln -sf "$INSTALL_PREFIX/menu.sh" "$SYMLINK" 2>/dev/null; then
     echo -e "  ${GREEN}[OK]${NC} ${SYMLINK} -> ${INSTALL_PREFIX}/menu.sh"
 else
-    echo -e "  ${YELLOW}[SKIP]${NC} Cannot write to /usr/local/bin (run with sudo to enable 'toolkit' command)"
-    echo -e "         You can run directly: ${BOLD}${INSTALL_PREFIX}/menu.sh${NC}"
+    echo -e "  ${YELLOW}[SKIP]${NC} Cannot write to /usr/local/bin"
+    echo "         You can run directly: ${INSTALL_PREFIX}/menu.sh"
 fi
 
 # --- Done ---
 echo ""
-echo -e "────────────────────────────────────────────"
+echo "--------------------------------------------"
 echo -e "${GREEN}${BOLD}Installation complete!${NC}"
 echo ""
-echo -e "  Version:  ${BOLD}${VERSION}${NC}"
-echo -e "  Location: ${BOLD}${INSTALL_PREFIX}${NC}"
-echo -e "  Command:  ${BOLD}toolkit${NC}"
+echo "  Version:  ${VERSION}"
+echo "  Location: ${INSTALL_PREFIX}"
 echo ""
-echo -e "  Run ${BOLD}toolkit${NC} as wasadmin to launch the menu."
+echo "  Run ${INSTALL_PREFIX}/menu.sh to launch the toolkit."
 echo ""
