@@ -18,7 +18,7 @@ param(
     [string[]]$Servers,
 
     [switch]$All,
-    [string]$Zone,
+    [string]$Zone = "europe-west1-b",
     [string]$Project = "john-lewis-partnership-190122",
     [string]$Prefix = "/home/wasadmin/toolkit"
 )
