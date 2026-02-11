@@ -20,7 +20,7 @@ NDM_NAME="$(basename "$NDM_PROFILE")"
 NODE_NAME="$(basename "$NODE_PROFILE")"
 
 STEP=0
-TOTAL=11
+TOTAL=10
 
 step() {
     ((STEP++))
@@ -55,7 +55,7 @@ echo -e "  App Server:  ${BOLD}${YELLOW}$APP_SERVER${NC}"
 echo -e "  MQ:          ${BOLD}${YELLOW}$MQ_QM${NC}"
 echo ""
 echo -e "  ${DIM}Run this after a reboot. Everything in one go:${NC}"
-echo -e "  ${DIM}MQ > kill stale > clean > logs > JDK 8 > Dmgr > Node > Fix perms > Build > Start${NC}"
+echo -e "  ${DIM}MQ > kill stale > clean > logs > Dmgr > Node > Fix perms > Build > Start${NC}"
 echo ""
 
 # ============================================================
@@ -70,15 +70,14 @@ echo -e "      ${DIM}[ 2]${NC} Kill stale WebSphere processes"
 echo -e "      ${DIM}[ 3]${NC} Remove temp files"
 echo -e "      ${DIM}[ 4]${NC} Clear logs"
 echo -e "    ${CYAN}Phase 3${NC}  WAS Infrastructure"
-echo -e "      ${DIM}[ 5]${NC} Configure Java 8"
-echo -e "      ${DIM}[ 6]${NC} Start Dmgr"
-echo -e "      ${DIM}[ 7]${NC} Start Node Agent"
-echo -e "      ${DIM}[ 8]${NC} Fix Permissions"
+echo -e "      ${DIM}[ 5]${NC} Start Dmgr"
+echo -e "      ${DIM}[ 6]${NC} Start Node Agent"
+echo -e "      ${DIM}[ 7]${NC} Fix Permissions"
 echo -e "    ${YELLOW}Phase 4${NC}  Build"
-echo -e "      ${DIM}[ 9]${NC} Full Upgrade (teardown + upgrade + deploy)"
+echo -e "      ${DIM}[ 8]${NC} Full Upgrade (teardown + upgrade + deploy)"
 echo -e "    ${GREEN}Phase 5${NC}  Go Live"
-echo -e "      ${DIM}[10]${NC} Start App Server ($APP_SERVER)"
-echo -e "      ${DIM}[11]${NC} Verify"
+echo -e "      ${DIM}[ 9]${NC} Start App Server ($APP_SERVER)"
+echo -e "      ${DIM}[10]${NC} Verify"
 echo ""
 
 read -p "  Continue? (y/N): " confirm
@@ -146,13 +145,6 @@ fi
 # ============================================================
 echo ""
 echo -e "  ${BOLD}${CYAN}━━━ Phase 3: WAS Infrastructure ━━━${NC}"
-
-step "Configuring Java 8"
-if run "deploy/configure-java-8.sh"; then
-    ok "JDK 8 configured"
-else
-    warn "Java 8 config had issues — may already be set (continuing)"
-fi
 
 step "Starting Dmgr"
 if run "services/start-dmgr.sh"; then
@@ -254,11 +246,10 @@ echo -e "  ${BOLD}What happened:${NC}"
 echo -e "    ${GREEN} 1.${NC} MQ Queue Manager started"
 echo -e "    ${GREEN} 2.${NC} Stale WebSphere processes killed"
 echo -e "    ${GREEN} 3.${NC} Temp files removed, logs cleared"
-echo -e "    ${GREEN} 4.${NC} JDK 8 configured"
-echo -e "    ${GREEN} 5.${NC} Dmgr > Node Agent started"
-echo -e "    ${GREEN} 6.${NC} Permissions fixed"
-echo -e "    ${GREEN} 7.${NC} Full upgrade build deployed"
-echo -e "    ${GREEN} 8.${NC} App Server started and verified"
+echo -e "    ${GREEN} 4.${NC} Dmgr > Node Agent started"
+echo -e "    ${GREEN} 5.${NC} Permissions fixed"
+echo -e "    ${GREEN} 6.${NC} Full upgrade build deployed"
+echo -e "    ${GREEN} 7.${NC} App Server started and verified"
 echo ""
 echo -e "  ${BOLD}Log:${NC}"
 echo -e "    ${DIM}$NODE_PROFILE/logs/$APP_SERVER/SystemOut.log${NC}"

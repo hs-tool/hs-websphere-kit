@@ -40,7 +40,6 @@ run_phase "services/start-mq.sh"            "Start MQ"
 run_phase "services/start-websphere.sh"     "Start WebSphere"
 run_phase "maintenance/remove-temp-files.sh" "Remove Temp Files"
 run_phase "deploy/full-upgrade.sh"           "Full Upgrade"
-run_phase "deploy/configure-java-8.sh"       "Configure Java 8 SDK"
 run_phase "services/stop-websphere.sh"       "Stop WebSphere"
 run_phase "maintenance/remove-temp-files.sh" "Remove Temp Files (post-stop)"
 

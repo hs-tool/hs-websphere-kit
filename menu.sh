@@ -415,7 +415,6 @@ menu_deploy() {
             "Run Ant Target|(execute any Ant build target)" \
             "Deploy from Cache|(install from local cache, no FTP)" \
             "Set Build Version|(current: $BUILD_VER)" \
-            "Configure Java 8|(switch WAS SDK to Java 8)" \
             "Build WS Apps|(install apps into WebSphere)" \
             "Download Build|(fetch build artifacts via FTP)" \
             "Full Upgrade|(clean + download + deploy)" \
@@ -426,12 +425,11 @@ menu_deploy() {
             0) run_script "deploy/run-ant.sh" ;;
             1) run_script "deploy/deploy-cached.sh" ;;
             2) run_script "deploy/set-build-version.sh" ;;
-            3) run_script "deploy/configure-java-8.sh" ;;
-            4) run_script "deploy/build-ws-apps.sh" ;;
-            5) run_script "deploy/download-build.sh" ;;
-            6) run_script "deploy/full-upgrade.sh" ;;
-            7) run_script "deploy/e2e-build.sh" ;;
-            8) run_script "deploy/teardown-ws-apps.sh" ;;
+            3) run_script "deploy/build-ws-apps.sh" ;;
+            4) run_script "deploy/download-build.sh" ;;
+            5) run_script "deploy/full-upgrade.sh" ;;
+            6) run_script "deploy/e2e-build.sh" ;;
+            7) run_script "deploy/teardown-ws-apps.sh" ;;
             -1) return ;;
         esac
         echo ""
