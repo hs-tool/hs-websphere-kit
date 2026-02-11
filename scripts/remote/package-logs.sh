@@ -10,10 +10,9 @@ TARBALL="/tmp/was-logs.tar"
 cd "$WAS_BASE" 2>/dev/null
 tar cf "$TARBALL" --ignore-failed-read */logs 2>/dev/null
 
-# Find and append beanstore
-BS=$(find /wasappdata /home /opt -maxdepth 5 -type d -name beanstore 2>/dev/null | head -1)
-if [ -n "$BS" ]; then
-    tar rf "$TARBALL" -C "$(dirname "$BS")" beanstore 2>/dev/null
+# Append /beanstore directory (ServerErrlogs, datadist, etc.)
+if [ -d "/beanstore" ]; then
+    tar rf "$TARBALL" -C / beanstore 2>/dev/null
 fi
 
 # Compress

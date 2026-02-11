@@ -56,21 +56,26 @@ clean_pattern() {
 
 # --- Temp directories ---
 echo -e "${BOLD}Cleaning temp directories...${NC}"
-clean_dir "$NDM_PROFILE/config/temp/download" "NDM config/temp/download"
+clean_dir "$NODE_PROFILE/temp"                "NODE temp (EJB stubs, compiled classes)"
+clean_dir "$NODE_PROFILE/wstemp"              "NODE wstemp"
+clean_dir "$NODE_PROFILE/config/temp"         "NODE config/temp"
+clean_dir "$NDM_PROFILE/temp"                 "NDM temp"
 clean_dir "$NDM_PROFILE/wstemp"               "NDM wstemp"
-clean_dir "$NODE_PROFILE/wstemp"               "NODE wstemp"
+clean_dir "$NDM_PROFILE/config/temp"          "NDM config/temp"
 
-# --- Old application configs ---
+# --- Stale application configs (exact names only) ---
+# NOTE: Only remove apps confirmed as broken/orphaned.
+# ESI/ESP prefixes are NOT safe — live apps run on ESI_APPSRV_01.
 echo ""
 echo -e "${BOLD}Removing stale application configs...${NC}"
 apps_dir="$NDM_PROFILE/config/cells/$CELL_NAME/applications"
 cus_dir="$NDM_PROFILE/config/cells/$CELL_NAME/cus"
 blas_dir="$NDM_PROFILE/config/cells/$CELL_NAME/blas"
 
-for prefix in wtr ESI ESP JLP; do
-    clean_pattern "$apps_dir" "${prefix}*" "applications"
-    clean_pattern "$cus_dir"  "${prefix}*" "cus"
-    clean_pattern "$blas_dir" "${prefix}*" "blas"
+for stale_app in "ESI-GiftRegistryService-Simulator*"; do
+    clean_pattern "$apps_dir" "$stale_app" "applications"
+    clean_pattern "$cus_dir"  "$stale_app" "cus"
+    clean_pattern "$blas_dir" "$stale_app" "blas"
 done
 
 # --- Disk space after cleanup ---

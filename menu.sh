@@ -25,11 +25,16 @@ BRIGHT_MAGENTA='\033[0;95m'
 BRIGHT_CYAN='\033[0;96m'
 BRIGHT_WHITE='\033[0;97m'
 
-# --- Cursor safety ---
+# --- Cursor safety & cleanup ---
+_SB_CACHE_FILE="/tmp/.hs_status_cache_$$"
 restore_cursor() {
     tput cnorm 2>/dev/null
 }
-trap restore_cursor EXIT INT TERM
+_cleanup() {
+    restore_cursor
+    rm -f "$_SB_CACHE_FILE" "${_SB_CACHE_FILE}.tmp" 2>/dev/null
+}
+trap _cleanup EXIT INT TERM
 
 # --- Helpers ---
 
@@ -60,6 +65,107 @@ get_toolkit_version() {
     fi
 }
 
+# Status bar — async file-based cache for instant menu rendering
+_SB_CACHE_TTL=15  # seconds
+
+_refresh_status_cache() {
+    local dmgr_st node_st app_st mq_st
+    local dmgr_color node_color app_color mq_color
+
+    # Single ps snapshot for all process checks
+    local ps_snap
+    ps_snap=$(ps -ef 2>/dev/null)
+
+    if echo "$ps_snap" | grep -v grep | grep -q "dmgr"; then
+        dmgr_st="UP"; dmgr_color="$GREEN"
+    else
+        dmgr_st="DOWN"; dmgr_color="$RED"
+    fi
+
+    if echo "$ps_snap" | grep -v grep | grep -q "nodeagent"; then
+        node_st="UP"; node_color="$GREEN"
+    else
+        node_st="DOWN"; node_color="$RED"
+    fi
+
+    if echo "$ps_snap" | grep -v grep | grep -q "$APP_SERVER"; then
+        app_st="UP"; app_color="$GREEN"
+    else
+        app_st="DOWN"; app_color="$RED"
+    fi
+
+    # MQ — slowest check, uses su
+    if command -v dspmq &>/dev/null || [[ -d /opt/mqm/bin ]]; then
+        local dspmq_cmd="dspmq"
+        command -v dspmq &>/dev/null || dspmq_cmd="/opt/mqm/bin/dspmq"
+        local mq_out
+        mq_out=$(su -c "$dspmq_cmd" "$MQ_USER" 2>/dev/null || true)
+        if echo "$mq_out" | grep -qi "Running"; then
+            mq_st="UP"; mq_color="$GREEN"
+        else
+            mq_st="DOWN"; mq_color="$RED"
+        fi
+    else
+        mq_st="N/A"; mq_color="$YELLOW"
+    fi
+
+    # Disk usage
+    local disk_used disk_total disk_pct disk_color disk_label
+    if df -h "$WAS_BASE" &>/dev/null; then
+        read -r disk_used disk_total disk_pct < <(df -h "$WAS_BASE" | awk 'NR==2{print $3, $2, $5}')
+        disk_pct="${disk_pct%\%}"
+        if (( disk_pct >= 85 )); then
+            disk_color="$RED"
+        elif (( disk_pct >= 70 )); then
+            disk_color="$YELLOW"
+        else
+            disk_color="$GREEN"
+        fi
+        disk_label="${disk_used}/${disk_total} (${disk_pct}%)"
+    else
+        disk_color="$YELLOW"; disk_label="N/A"
+    fi
+
+    # Write rendered output to cache file (atomic via temp + mv)
+    local tmp="${_SB_CACHE_FILE}.tmp"
+    {
+        echo -e "  ${DIM}┌─ Status ─────────────────────────────────────────────────┐${NC}"
+        printf "  ${DIM}│${NC}  Dmgr ${dmgr_color}●${NC} %-4s  Node ${node_color}●${NC} %-4s  App ${app_color}●${NC} %-6s  MQ ${mq_color}●${NC} %-4s  ${DIM}│${NC}\n" \
+            "$dmgr_st" "$node_st" "$app_st" "$mq_st"
+        echo -e "  ${DIM}│${NC}                                                          ${DIM}│${NC}"
+        printf "  ${DIM}│${NC}  Disk ${disk_color}●${NC} %-51s${DIM}│${NC}\n" \
+            "$disk_label  $WAS_BASE"
+        echo -e "  ${DIM}└──────────────────────────────────────────────────────────┘${NC}"
+    } > "$tmp"
+    mv -f "$tmp" "$_SB_CACHE_FILE"
+}
+
+_render_status_placeholder() {
+    echo -e "  ${DIM}┌─ Status ─────────────────────────────────────────────────┐${NC}"
+    printf "  ${DIM}│${NC}  Dmgr ${DIM}●${NC} --    Node ${DIM}●${NC} --    App ${DIM}●${NC} --      MQ ${DIM}●${NC} --    ${DIM}│${NC}\n"
+    echo -e "  ${DIM}│${NC}                                                          ${DIM}│${NC}"
+    printf "  ${DIM}│${NC}  Disk ${DIM}●${NC} %-51s${DIM}│${NC}\n" "checking..."
+    echo -e "  ${DIM}└──────────────────────────────────────────────────────────┘${NC}"
+}
+
+render_status_bar() {
+    # Cache file exists and is fresh — instant render
+    if [[ -f "$_SB_CACHE_FILE" ]]; then
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$_SB_CACHE_FILE" 2>/dev/null || echo 0) ))
+        if (( file_age < _SB_CACHE_TTL )); then
+            cat "$_SB_CACHE_FILE"
+            return
+        fi
+    fi
+
+    # No cache yet — show placeholder, kick off background refresh
+    _render_status_placeholder
+    _refresh_status_cache &
+}
+
+# Kick off first status check immediately in background
+_refresh_status_cache &
+
 show_banner() {
     clear
     BUILD_VER=$(get_build_version)
@@ -72,6 +178,8 @@ show_banner() {
     echo -e "${NC}"
     echo -e "  ${DIM}Developed by Hafiz Syed Muhammad Usman${NC}"
     echo -e "  ${BOLD}Server: ${YELLOW}$SERVER_NAME${NC}    ${BOLD}Build: ${YELLOW}$BUILD_VER${NC}    ${BOLD}Toolkit: ${CYAN}v$TK_VER${NC}"
+    echo ""
+    render_status_bar
     echo ""
 }
 
