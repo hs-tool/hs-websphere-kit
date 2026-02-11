@@ -20,7 +20,7 @@ NDM_NAME="$(basename "$NDM_PROFILE")"
 NODE_NAME="$(basename "$NODE_PROFILE")"
 
 STEP=0
-TOTAL=10
+TOTAL=11
 
 step() {
     ((STEP++))
@@ -55,7 +55,7 @@ echo -e "  App Server:  ${BOLD}${YELLOW}$APP_SERVER${NC}"
 echo -e "  MQ:          ${BOLD}${YELLOW}$MQ_QM${NC}"
 echo ""
 echo -e "  ${DIM}Run this after a reboot. Everything in one go:${NC}"
-echo -e "  ${DIM}MQ > kill stale > clean > logs > JDK 8 > Dmgr > Node > Sync > Build > Start${NC}"
+echo -e "  ${DIM}MQ > kill stale > clean > logs > JDK 8 > Dmgr > Node > Fix perms > Build > Start${NC}"
 echo ""
 
 # ============================================================
@@ -73,11 +73,12 @@ echo -e "    ${CYAN}Phase 3${NC}  WAS Infrastructure"
 echo -e "      ${DIM}[ 5]${NC} Configure Java 8"
 echo -e "      ${DIM}[ 6]${NC} Start Dmgr"
 echo -e "      ${DIM}[ 7]${NC} Start Node Agent"
+echo -e "      ${DIM}[ 8]${NC} Fix Permissions"
 echo -e "    ${YELLOW}Phase 4${NC}  Build"
-echo -e "      ${DIM}[ 8]${NC} Full Upgrade (teardown + upgrade + deploy)"
+echo -e "      ${DIM}[ 9]${NC} Full Upgrade (teardown + upgrade + deploy)"
 echo -e "    ${GREEN}Phase 5${NC}  Go Live"
-echo -e "      ${DIM}[ 9]${NC} Start App Server ($APP_SERVER)"
-echo -e "      ${DIM}[10]${NC} Verify"
+echo -e "      ${DIM}[10]${NC} Start App Server ($APP_SERVER)"
+echo -e "      ${DIM}[11]${NC} Verify"
 echo ""
 
 read -p "  Continue? (y/N): " confirm
@@ -169,6 +170,13 @@ else
     exit 1
 fi
 
+step "Fixing Permissions"
+if AUTO_YES=true run "maintenance/fix-permissions.sh"; then
+    ok "Permissions fixed"
+else
+    warn "Permission fix had issues (continuing)"
+fi
+
 # ============================================================
 # PHASE 4: BUILD
 # ============================================================
@@ -248,8 +256,9 @@ echo -e "    ${GREEN} 2.${NC} Stale WebSphere processes killed"
 echo -e "    ${GREEN} 3.${NC} Temp files removed, logs cleared"
 echo -e "    ${GREEN} 4.${NC} JDK 8 configured"
 echo -e "    ${GREEN} 5.${NC} Dmgr > Node Agent started"
-echo -e "    ${GREEN} 6.${NC} Full upgrade build deployed"
-echo -e "    ${GREEN} 7.${NC} App Server started and verified"
+echo -e "    ${GREEN} 6.${NC} Permissions fixed"
+echo -e "    ${GREEN} 7.${NC} Full upgrade build deployed"
+echo -e "    ${GREEN} 8.${NC} App Server started and verified"
 echo ""
 echo -e "  ${BOLD}Log:${NC}"
 echo -e "    ${DIM}$NODE_PROFILE/logs/$APP_SERVER/SystemOut.log${NC}"

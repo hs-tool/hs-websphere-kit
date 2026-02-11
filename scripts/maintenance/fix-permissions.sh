@@ -1,9 +1,9 @@
 #!/bin/bash
 source "$(dirname "$0")/../../config.sh"
-set -euo pipefail
-
+set -uo pipefail
 
 EXPECTED="${WAS_USER}:${WAS_GROUP}"
+AUTO_YES="${AUTO_YES:-false}"
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Fix Permissions ===${NC}"
@@ -12,16 +12,17 @@ echo -e "  Server: ${YELLOW}$SERVER_NAME${NC}"
 echo ""
 
 # --- Pre-check: is there anything to fix? ---
+# Note: find returns non-zero on permission errors, so we guard with || true
 needs_fix=0
 for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
     # Wrong ownership
-    bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -1 | wc -l)
+    bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -1 | wc -l) || true
     if (( bad > 0 )); then needs_fix=1; fi
     # Directories missing owner rwx
-    bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -1 | wc -l)
+    bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -1 | wc -l) || true
     if (( bad > 0 )); then needs_fix=1; fi
     # Files missing owner rw
-    bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -1 | wc -l)
+    bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -1 | wc -l) || true
     if (( bad > 0 )); then needs_fix=1; fi
 done
 
@@ -36,9 +37,9 @@ echo -e "${BOLD}Current state:${NC}"
 for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
     label=$(basename "$profile_dir")
 
-    owner_bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -500 | wc -l)
-    dir_bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -500 | wc -l)
-    file_bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -500 | wc -l)
+    owner_bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -500 | wc -l) || true
+    dir_bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -500 | wc -l) || true
+    file_bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -500 | wc -l) || true
 
     echo -e "  ${BOLD}$label${NC}"
     if (( owner_bad > 0 )); then
@@ -63,10 +64,14 @@ echo "This will fix ownership and permission bits on both profile directories:"
 echo "  - chown -R ${EXPECTED}"
 echo "  - Directories: ensure owner rwx (u+rwx)"
 echo "  - Files:       ensure owner rw  (u+rw)"
-read -p "Continue? (y/N): " confirm
-if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 0
+if [[ "$AUTO_YES" == "true" ]]; then
+    echo -e "  ${DIM}(auto-confirmed)${NC}"
+else
+    read -p "Continue? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 0
+    fi
 fi
 
 echo ""
@@ -91,9 +96,9 @@ echo -e "${BOLD}Verification:${NC}"
 all_good=true
 for profile_dir in "$NDM_PROFILE" "$NODE_PROFILE"; do
     label=$(basename "$profile_dir")
-    owner_bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -1 | wc -l)
-    dir_bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -1 | wc -l)
-    file_bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -1 | wc -l)
+    owner_bad=$(find "$profile_dir" -maxdepth 3 \( ! -user "$WAS_USER" -o ! -group "$WAS_GROUP" \) 2>/dev/null | head -1 | wc -l) || true
+    dir_bad=$(find "$profile_dir" -maxdepth 3 -type d ! -perm -u+rwx 2>/dev/null | head -1 | wc -l) || true
+    file_bad=$(find "$profile_dir" -maxdepth 3 -type f ! -perm -u+rw 2>/dev/null | head -1 | wc -l) || true
     total_bad=$(( owner_bad + dir_bad + file_bad ))
 
     if (( total_bad == 0 )); then
