@@ -49,6 +49,9 @@ $Version = (Get-Content "$RepoRoot\VERSION" -Raw).Trim()
 $Tarball = "build-toolkit-$Version.tar.gz"
 $RemoteTmp = "/tmp/build-toolkit-deploy"
 
+# --- Clean up stale tarballs from previous runs ---
+Get-ChildItem "$RepoRoot\build-toolkit-*.tar.gz" -ErrorAction SilentlyContinue | Remove-Item -Force
+
 # --- Build tarball ---
 Write-Host "`n  Building $Tarball..." -ForegroundColor Cyan
 $DistDir = Join-Path $RepoRoot "build-toolkit"
@@ -56,6 +59,7 @@ if (Test-Path $DistDir) { Remove-Item $DistDir -Recurse -Force }
 New-Item $DistDir -ItemType Directory | Out-Null
 $FilesToCopy = @("config.sh", "menu.sh", "banner.txt", "install.sh", "uninstall.sh", "VERSION")
 foreach ($f in $FilesToCopy) { Copy-Item (Join-Path $RepoRoot $f) $DistDir }
+Copy-Item (Join-Path $RepoRoot "lib") $DistDir -Recurse
 Copy-Item (Join-Path $RepoRoot "scripts") $DistDir -Recurse
 Push-Location $RepoRoot
 try {

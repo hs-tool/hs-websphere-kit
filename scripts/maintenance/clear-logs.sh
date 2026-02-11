@@ -2,13 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[92m'
-RED='\033[91m'
-YELLOW='\033[93m'
-CYAN='\033[96m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 truncated=0
 deleted=0

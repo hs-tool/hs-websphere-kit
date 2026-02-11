@@ -2,13 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[92m'
-RED='\033[91m'
-YELLOW='\033[93m'
-CYAN='\033[96m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 deleted=0
 
@@ -21,6 +14,11 @@ echo ""
 clean_dir() {
     local dir="$1"
     local label="$2"
+    # Safeguard: only allow cleaning inside WAS profiles directory
+    if [[ "$dir" != "$WAS_BASE"/* ]]; then
+        echo -e "  ${RED}REFUSED${NC}  ${DIM}$label — outside $WAS_BASE${NC}"
+        return 1
+    fi
     if [[ -d "$dir" ]]; then
         local count
         count=$(find "$dir" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l)

@@ -102,6 +102,9 @@ timeout /t 1 >nul
 goto :menu
 
 :build
+:: --- Clean up stale tarballs from previous runs ---
+for %%T in ("%REPOROOT%build-toolkit-*.tar.gz") do del /q "%%T" 2>nul
+
 :: --- Build tarball ---
 echo.
 echo   %BOLD%%CYAN%Building %TARBALL%...%NC%
@@ -111,6 +114,7 @@ mkdir "%DISTDIR%"
 for %%F in (config.sh menu.sh banner.txt install.sh uninstall.sh VERSION) do (
     copy /y "%REPOROOT%%%F" "%DISTDIR%\" >nul
 )
+xcopy /s /e /q /y "%REPOROOT%lib" "%DISTDIR%\lib\" >nul
 xcopy /s /e /q /y "%REPOROOT%scripts" "%DISTDIR%\scripts\" >nul
 
 pushd "%REPOROOT%"

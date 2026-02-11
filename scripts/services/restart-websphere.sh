@@ -4,11 +4,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
 
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Full WebSphere Restart Cycle ===${NC}"

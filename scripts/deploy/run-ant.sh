@@ -2,13 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Run Ant Target ===${NC}"
@@ -67,6 +60,7 @@ echo ""
 echo -e "  ${BOLD}Running: $target${NC}"
 echo ""
 
+ant_rc=0
 (
     cd "$DEPLOY_PATH" || exit 1
     SUPERROOT=`pwd`/../../..
@@ -77,15 +71,18 @@ echo ""
     export CLASSPATH=$CLASSPATH:$SUPERROOT/3rdlibs/commons-net-1.4.1.jar
     export CLASSPATH=$CLASSPATH:$SUPERROOT/3rdlibs/jakarta-oro-2.0.8.jar
     $JAVA_HOME/bin/java -ms64m -mx512m org.apache.tools.ant.Main -buildfile upgrade.xml "$target" 2> errlog.out
-    if [ $? -gt 0 ]; then
-        echo "An error occurred, see errlog.out"
-    fi
-)
+    exit $?
+) || ant_rc=$?
 
 elapsed=$(( SECONDS - start_time ))
 minutes=$(( elapsed / 60 ))
 seconds=$(( elapsed % 60 ))
 
 echo ""
-echo -e "${GREEN}${BOLD}  '$target' complete in ${minutes}m ${seconds}s${NC}"
+if (( ant_rc == 0 )); then
+    echo -e "${GREEN}${BOLD}  '$target' complete in ${minutes}m ${seconds}s${NC}"
+else
+    echo -e "${RED}${BOLD}  '$target' FAILED (exit code $ant_rc) in ${minutes}m ${seconds}s${NC}"
+    echo -e "  ${DIM}Check errlog.out in $DEPLOY_PATH for details${NC}"
+fi
 echo ""

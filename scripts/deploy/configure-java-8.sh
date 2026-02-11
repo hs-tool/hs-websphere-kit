@@ -2,12 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[92m'
-YELLOW='\033[93m'
-CYAN='\033[96m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Configure Java 8 SDK ===${NC}"
@@ -17,13 +11,25 @@ echo ""
 
 echo -e "  ${BOLD}Setting Java 8 as default profile SDK...${NC}"
 cd "$NODE_PROFILE/bin" || { echo "ERROR: Cannot cd to $NODE_PROFILE/bin"; exit 1; }
-sudo ./managesdk.sh -setNewProfileDefault -sdkname 1.8_64
-echo -e "  ${GREEN}Default profile SDK set${NC}"
+
+if [[ ! -x "./managesdk.sh" ]]; then
+    echo -e "  ${YELLOW}ERROR: managesdk.sh not found or not executable in $NODE_PROFILE/bin${NC}"
+    exit 1
+fi
+
+if sudo ./managesdk.sh -setNewProfileDefault -sdkname 1.8_64; then
+    echo -e "  ${GREEN}Default profile SDK set${NC}"
+else
+    echo -e "  ${YELLOW}WARNING: setNewProfileDefault exited with non-zero status${NC}"
+fi
 
 echo ""
 echo -e "  ${BOLD}Enabling Java 8 for all profiles and servers...${NC}"
-sudo ./managesdk.sh -enableProfileAll -sdkname 1.8_64 -enableServers
-echo -e "  ${GREEN}All profiles enabled${NC}"
+if sudo ./managesdk.sh -enableProfileAll -sdkname 1.8_64 -enableServers; then
+    echo -e "  ${GREEN}All profiles enabled${NC}"
+else
+    echo -e "  ${YELLOW}WARNING: enableProfileAll exited with non-zero status${NC}"
+fi
 
 cd "$HOME_DIR" || { echo "ERROR: Cannot cd to $HOME_DIR"; exit 1; }
 

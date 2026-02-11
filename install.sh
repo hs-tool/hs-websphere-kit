@@ -74,10 +74,12 @@ for f in config.sh menu.sh banner.txt; do
     fi
 done
 
-if [[ ! -d "$SOURCE_DIR/scripts" ]]; then
-    echo -e "${RED}ERROR: scripts/ directory missing.${NC}"
-    exit 1
-fi
+for d in lib scripts; do
+    if [[ ! -d "$SOURCE_DIR/$d" ]]; then
+        echo -e "${RED}ERROR: $d/ directory missing.${NC}"
+        exit 1
+    fi
+done
 echo -e "  ${GREEN}[OK]${NC} Source files verified"
 
 # --- Clean existing installation ---
@@ -98,7 +100,8 @@ cp "$SOURCE_DIR/banner.txt"   "$INSTALL_PREFIX/"
 cp "$SOURCE_DIR/VERSION"      "$INSTALL_PREFIX/"
 cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_PREFIX/"
 
-# Copy scripts recursively
+# Copy lib and scripts recursively
+cp -r "$SOURCE_DIR/lib"     "$INSTALL_PREFIX/"
 cp -r "$SOURCE_DIR/scripts" "$INSTALL_PREFIX/"
 
 echo -e "  ${GREEN}[OK]${NC} Files copied"

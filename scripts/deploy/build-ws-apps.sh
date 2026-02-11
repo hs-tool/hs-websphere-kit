@@ -2,12 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Build WAS Applications ===${NC}"
@@ -31,10 +25,13 @@ start_time=$SECONDS
 
 echo ""
 echo -e "  ${BOLD}Running build...${NC}"
-"$WS_ADMIN_BIN/wasadmin.sh" "$WS_ENV_NAME" build
-
-elapsed=$(( SECONDS - start_time ))
-
-echo ""
-echo -e "${GREEN}${BOLD}  Build complete (${elapsed}s)${NC}"
+if "$WS_ADMIN_BIN/wasadmin.sh" "$WS_ENV_NAME" build; then
+    elapsed=$(( SECONDS - start_time ))
+    echo ""
+    echo -e "${GREEN}${BOLD}  Build complete (${elapsed}s)${NC}"
+else
+    elapsed=$(( SECONDS - start_time ))
+    echo ""
+    echo -e "${RED}${BOLD}  Build FAILED (${elapsed}s)${NC}"
+fi
 echo ""

@@ -2,14 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-# --- Colors ---
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 TOTAL_PHASES=7
 CURRENT_PHASE=0

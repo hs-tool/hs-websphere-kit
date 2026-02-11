@@ -34,6 +34,22 @@ WS_ENV_NAME="D"
 
 HOME_DIR="$TOOLKIT_ROOT"
 
+# --- Colors (inline defaults, lib/colors.sh overrides if present) ---
+GREEN='\033[92m'
+RED='\033[91m'
+YELLOW='\033[93m'
+CYAN='\033[96m'
+BLUE='\033[94m'
+MAGENTA='\033[95m'
+WHITE='\033[97m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+source "$TOOLKIT_ROOT/lib/colors.sh" 2>/dev/null || true
+
+# Audit logging — records every script execution
+source "$TOOLKIT_ROOT/lib/audit.sh" 2>/dev/null || true
+
 # Runs an original AutoSIAN deploy script (upgrade.sh, getbuild.sh, etc.)
 # These scripts set up their own SUPERROOT, CLASSPATH, and invoke Ant.
 run_deploy_script() {

@@ -2,9 +2,8 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 source "$SCRIPT_DIR/config.sh"
-set -uo pipefail
 
-# --- Colors ---
+# --- Colors (inline defaults, before set -u) ---
 GREEN='\033[92m'
 RED='\033[91m'
 YELLOW='\033[93m'
@@ -15,7 +14,6 @@ WHITE='\033[97m'
 BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
-
 BRIGHT_BLACK='\033[0;90m'
 BRIGHT_RED='\033[0;91m'
 BRIGHT_GREEN='\033[0;92m'
@@ -24,6 +22,10 @@ BRIGHT_BLUE='\033[0;94m'
 BRIGHT_MAGENTA='\033[0;95m'
 BRIGHT_CYAN='\033[0;96m'
 BRIGHT_WHITE='\033[0;97m'
+# Override with shared lib if available
+source "$SCRIPT_DIR/lib/colors.sh" 2>/dev/null || true
+
+set -uo pipefail
 
 # --- Cursor safety & cleanup ---
 _SB_CACHE_FILE="/tmp/.hs_status_cache_$$"
@@ -94,12 +96,12 @@ _refresh_status_cache() {
         app_st="DOWN"; app_color="$RED"
     fi
 
-    # MQ — slowest check, uses su
+    # MQ — slowest check, uses sudo with timeout
     if command -v dspmq &>/dev/null || [[ -d /opt/mqm/bin ]]; then
         local dspmq_cmd="dspmq"
         command -v dspmq &>/dev/null || dspmq_cmd="/opt/mqm/bin/dspmq"
         local mq_out
-        mq_out=$(su -c "$dspmq_cmd" "$MQ_USER" 2>/dev/null || true)
+        mq_out=$(timeout 10 sudo -u "$MQ_USER" "$dspmq_cmd" 2>/dev/null || true)
         if echo "$mq_out" | grep -qi "Running"; then
             mq_st="UP"; mq_color="$GREEN"
         else
@@ -196,47 +198,97 @@ navigate_menu() {
     shift
     local items=("$@")
     local count=${#items[@]}
-    local total=$((count + 1))  # items + back
     local sel=0
 
-    # Parse labels and hints
+    # Classify items: dividers vs selectable
+    local is_divider=()     # 1=divider, 0=selectable
+    local divider_type=()   # "normal" or "danger"
+    local divider_text=()   # text to show for dividers
     local labels=()
     local hints=()
+    local selectable=()     # indices of selectable items
     local max_label_len=0
-    for item in "${items[@]}"; do
-        local label="${item%%|*}"
-        local hint="${item#*|}"
-        [[ "$hint" == "$item" ]] && hint=""
-        # Strip ANSI for length calculation
-        local plain
-        plain=$(echo -e "$label" | sed 's/\x1b\[[0-9;]*m//g')
-        local len=${#plain}
-        ((len > max_label_len)) && max_label_len=$len
-        labels+=("$label")
-        hints+=("$hint")
+
+    for ((i = 0; i < count; i++)); do
+        local raw="${items[$i]}"
+        if [[ "$raw" == ---!* ]]; then
+            is_divider+=("1")
+            divider_type+=("danger")
+            divider_text+=("${raw#---!}")
+            labels+=("")
+            hints+=("")
+        elif [[ "$raw" == ---* ]]; then
+            is_divider+=("1")
+            divider_type+=("normal")
+            divider_text+=("${raw#---}")
+            labels+=("")
+            hints+=("")
+        else
+            is_divider+=("0")
+            divider_type+=("")
+            divider_text+=("")
+            selectable+=("$i")
+            local label="${raw%%|*}"
+            local hint="${raw#*|}"
+            [[ "$hint" == "$raw" ]] && hint=""
+            local plain
+            plain=$(echo -e "$label" | sed 's/\x1b\[[0-9;]*m//g')
+            local len=${#plain}
+            ((len > max_label_len)) && max_label_len=$len
+            labels+=("$label")
+            hints+=("$hint")
+        fi
     done
 
-    # draw_lines: items + blank + back + blank + hint
+    local sel_count=${#selectable[@]}
+    local total=$((sel_count + 1))  # selectable items + back
+    # sel is index into [0..sel_count] where sel_count = back
+
+    # draw_lines: all items (including dividers) + blank + back + blank + hint
     local draw_lines=$((count + 4))
 
+    # Map sel (0..sel_count-1) to row index, sel_count maps to back row
+    _sel_to_row() {
+        if ((sel < sel_count)); then
+            echo "${selectable[$sel]}"
+        else
+            echo "$count"  # back row sentinel
+        fi
+    }
+
     render_menu() {
+        local sel_row
+        sel_row=$(_sel_to_row)
         local i
         for ((i = 0; i < count; i++)); do
-            local plain
-            plain=$(echo -e "${labels[$i]}" | sed 's/\x1b\[[0-9;]*m//g')
-            local pad_len=$((max_label_len - ${#plain} + 2))
-            local padding=""
-            for ((p = 0; p < pad_len; p++)); do padding+=" "; done
-
-            if ((i == sel)); then
-                echo -e "  ${BOLD}${CYAN}▸${NC} ${BOLD}${labels[$i]}${NC}${padding}${DIM}${hints[$i]}${NC}\033[K"
+            if ((is_divider[i])); then
+                # Render divider line
+                local dtxt="${divider_text[$i]}"
+                if [[ -n "$dtxt" ]]; then
+                    dtxt=" ${dtxt} "
+                fi
+                if [[ "${divider_type[$i]}" == "danger" ]]; then
+                    echo -e "    ${RED}──${dtxt}──${NC}\033[K"
+                else
+                    echo -e "    ${DIM}──${dtxt}──${NC}\033[K"
+                fi
             else
-                echo -e "    ${labels[$i]}${padding}${DIM}${hints[$i]}${NC}\033[K"
+                local plain
+                plain=$(echo -e "${labels[$i]}" | sed 's/\x1b\[[0-9;]*m//g')
+                local pad_len=$((max_label_len - ${#plain} + 2))
+                local padding=""
+                for ((p = 0; p < pad_len; p++)); do padding+=" "; done
+
+                if ((i == sel_row)); then
+                    echo -e "  ${BOLD}${CYAN}▸${NC} ${BOLD}${labels[$i]}${NC}${padding}${DIM}${hints[$i]}${NC}\033[K"
+                else
+                    echo -e "    ${labels[$i]}${padding}${DIM}${hints[$i]}${NC}\033[K"
+                fi
             fi
         done
         echo -e "\033[K"
         # Back option
-        if ((sel == count)); then
+        if ((sel == sel_count)); then
             echo -e "  ${BOLD}${CYAN}▸${NC} ${BOLD}${back_label}${NC}\033[K"
         else
             echo -e "    ${DIM}${back_label}${NC}\033[K"
@@ -252,6 +304,8 @@ navigate_menu() {
         local key
         IFS= read -rsn1 key
 
+        local move=0  # -1=up, 1=down
+
         if [[ "$key" == $'\x1b' ]]; then
             local seq
             if IFS= read -rsn1 -t 0.2 seq; then
@@ -259,21 +313,13 @@ navigate_menu() {
                     local arrow
                     IFS= read -rsn1 -t 0.2 arrow
                     case "$arrow" in
-                        A) # Up
-                            ((sel--))
-                            ((sel < 0)) && sel=$((total - 1))
-                            ;;
-                        B) # Down
-                            ((sel++))
-                            ((sel >= total)) && sel=0
-                            ;;
+                        A) move=-1 ;;
+                        B) move=1 ;;
                         *)
-                            # Drain remaining escape chars
                             while IFS= read -rsn1 -t 0.05 _discard; do :; done
                             ;;
                     esac
                 else
-                    # Unknown escape seq — drain
                     while IFS= read -rsn1 -t 0.05 _discard; do :; done
                 fi
             else
@@ -283,8 +329,8 @@ navigate_menu() {
                 return
             fi
         elif [[ "$key" == "" ]]; then
-            # Enter
-            if ((sel == count)); then
+            # Enter — map sel back to selectable item index
+            if ((sel == sel_count)); then
                 MENU_RESULT=-1
             else
                 MENU_RESULT=$sel
@@ -292,17 +338,22 @@ navigate_menu() {
             restore_cursor
             return
         elif [[ "$key" == "k" ]]; then
-            ((sel--))
-            ((sel < 0)) && sel=$((total - 1))
+            move=-1
         elif [[ "$key" == "j" ]]; then
-            ((sel++))
-            ((sel >= total)) && sel=0
+            move=1
         elif [[ "$key" == "q" ]]; then
             MENU_RESULT=-1
             restore_cursor
             return
-        else
-            continue
+        fi
+
+        if ((move != 0)); then
+            ((sel += move))
+            if ((sel < 0)); then
+                sel=$((total - 1))
+            elif ((sel >= total)); then
+                sel=0
+            fi
         fi
 
         # Move cursor up and redraw
@@ -316,32 +367,37 @@ navigate_menu() {
 menu_services() {
     while true; do
         show_banner
-        echo -e "  ${BOLD}${GREEN}SERVICES${NC}"
+        echo -e "  ${BOLD}${GREEN}SERVICES & CONTROL${NC}"
         echo ""
         navigate_menu "Back" \
-            "${MAGENTA}Start MQ${NC}|" \
-            "${GREEN}Start${NC} Dmgr|" \
-            "${RED}Stop${NC} Dmgr|" \
-            "${GREEN}Start${NC} Node Agent|" \
-            "${RED}Stop${NC} Node Agent|" \
-            "${GREEN}Start${NC} WebSphere|(manager + node)" \
-            "${RED}Stop${NC} WebSphere|(manager + node)" \
-            "${GREEN}Start${NC} App Server|($APP_SERVER)" \
-            "${RED}Stop${NC} App Server|($APP_SERVER)" \
-            "${YELLOW}Restart Cycle${NC}|(stop > clean > start)" \
-            "${CYAN}Status${NC}|"
+            "${YELLOW}Restart Cycle${NC}|(stop all > clean temp > start all)" \
+            "${CYAN}Status${NC}|(show running state of all services)" \
+            "---Application Server" \
+            "${GREEN}Start${NC} App Server|(launch $APP_SERVER JVM)" \
+            "${RED}Stop${NC} App Server|(graceful shutdown $APP_SERVER)" \
+            "---Dmgr & Node Agent" \
+            "${GREEN}Start${NC} Dmgr|(launch Deployment Manager)" \
+            "${RED}Stop${NC} Dmgr|(shutdown Deployment Manager)" \
+            "${GREEN}Start${NC} Node Agent|(launch local node agent)" \
+            "${RED}Stop${NC} Node Agent|(shutdown local node agent)" \
+            "${CYAN}Sync Node${NC}|(push Dmgr config to this node)" \
+            "---MQ" \
+            "${GREEN}Start MQ${NC}|(start queue manager)" \
+            "${RED}Stop MQ${NC}|(stop queue manager)" \
+            "MQ Queue Depths|(check message backlog per queue)"
         case $MENU_RESULT in
-            0) run_script "services/start-mq.sh" ;;
-            1) run_script "services/start-dmgr.sh" ;;
-            2) run_script "services/stop-dmgr.sh" ;;
-            3) run_script "services/start-nodeagent.sh" ;;
-            4) run_script "services/stop-nodeagent.sh" ;;
-            5) run_script "services/start-websphere.sh" ;;
-            6) run_script "services/stop-websphere.sh" ;;
-            7) run_script "services/start-appserver.sh" ;;
-            8) run_script "services/stop-appserver.sh" ;;
-            9) run_script "services/restart-websphere.sh" ;;
-            10) run_script "services/status.sh" ;;
+            0) run_script "services/restart-websphere.sh" ;;
+            1) run_script "services/status.sh" ;;
+            2) run_script "services/start-appserver.sh" ;;
+            3) run_script "services/stop-appserver.sh" ;;
+            4) run_script "services/start-dmgr.sh" ;;
+            5) run_script "services/stop-dmgr.sh" ;;
+            6) run_script "services/start-nodeagent.sh" ;;
+            7) run_script "services/stop-nodeagent.sh" ;;
+            8) run_script "services/sync-node.sh" ;;
+            9) run_script "services/start-mq.sh" ;;
+            10) run_script "services/stop-mq.sh" ;;
+            11) run_script "diagnostics/mq-depth.sh" ;;
             -1) return ;;
         esac
         echo ""
@@ -356,25 +412,30 @@ menu_deploy() {
         echo -e "  ${BOLD}${CYAN}BUILD & DEPLOY${NC}"
         echo ""
         navigate_menu "Back" \
+            "---EJB Stub Fix" \
+            "${BOLD}${MAGENTA}EJB Deploy (JDK 7)${NC}|(switch to Java 7, generate stubs, deploy)" \
+            "---Build Pipeline" \
+            "Run Ant Target|(execute any Ant build target)" \
+            "Deploy from Cache|(install from local cache, no FTP)" \
             "Set Build Version|(current: $BUILD_VER)" \
-            "Download Build|(FTP only)" \
-            "Deploy from Cache|(no FTP, use local)" \
-            "Full Upgrade|(clean + FTP + deploy)" \
-            "Teardown WAS Apps|(remove apps only)" \
-            "Build WAS Apps|(install apps only)" \
-            "Set Java 8 SDK|" \
-            "Run Ant Target|(any target)" \
-            "End-to-End Build|(full pipeline)"
+            "Configure Java 8|(switch WAS SDK to Java 8)" \
+            "Build WS Apps|(install apps into WebSphere)" \
+            "Download Build|(fetch build artifacts via FTP)" \
+            "Full Upgrade|(clean + download + deploy)" \
+            "End-to-End Build|(full pipeline: version > FTP > deploy)" \
+            "---!Danger Zone" \
+            "Teardown WS Apps|(${RED}uninstall all deployed apps${NC})"
         case $MENU_RESULT in
-            0) run_script "deploy/set-build-version.sh" ;;
-            1) run_script "deploy/download-build.sh" ;;
+            0) run_script "deploy/ejb-deploy-jdk7.sh" ;;
+            1) run_script "deploy/run-ant.sh" ;;
             2) run_script "deploy/deploy-cached.sh" ;;
-            3) run_script "deploy/full-upgrade.sh" ;;
-            4) run_script "deploy/teardown-ws-apps.sh" ;;
+            3) run_script "deploy/set-build-version.sh" ;;
+            4) run_script "deploy/configure-java-8.sh" ;;
             5) run_script "deploy/build-ws-apps.sh" ;;
-            6) run_script "deploy/configure-java-8.sh" ;;
-            7) run_script "deploy/run-ant.sh" ;;
+            6) run_script "deploy/download-build.sh" ;;
+            7) run_script "deploy/full-upgrade.sh" ;;
             8) run_script "deploy/e2e-build.sh" ;;
+            9) run_script "deploy/teardown-ws-apps.sh" ;;
             -1) return ;;
         esac
         echo ""
@@ -382,23 +443,28 @@ menu_deploy() {
     done
 }
 
-menu_maintenance() {
+menu_housekeeping() {
     while true; do
         show_banner
-        echo -e "  ${BOLD}${BRIGHT_WHITE}MAINTENANCE${NC}"
+        echo -e "  ${BOLD}${BRIGHT_WHITE}HOUSEKEEPING${NC}"
         echo ""
         navigate_menu "Back" \
-            "Clear Logs|" \
-            "Remove Temp Files|" \
-            "Check Disk Space|" \
-            "Check Permissions|(audit only)" \
-            "Fix Permissions|(chown ${WAS_USER}:${WAS_GROUP})"
+            "Remove Temp Files|(clean WAS temp & cache dirs)" \
+            "Check Disk Space|(show usage for WAS partitions)" \
+            "Check Permissions|(audit file ownership, read-only)" \
+            "Fix Permissions|(chown ${WAS_USER}:${WAS_GROUP} on WAS dirs)" \
+            "${GREEN}Backup Config${NC}|(snapshot config before changes)" \
+            "${RED}Restore Config${NC}|(rollback config from backup)" \
+            "---!Danger Zone" \
+            "Kill Stale Processes|(${RED}force kill orphaned JVMs${NC})"
         case $MENU_RESULT in
-            0) run_script "maintenance/clear-logs.sh" ;;
-            1) run_script "maintenance/remove-temp-files.sh" ;;
-            2) run_script "maintenance/check-disk.sh" ;;
-            3) run_script "maintenance/check-permissions.sh" ;;
-            4) run_script "maintenance/fix-permissions.sh" ;;
+            0) run_script "maintenance/remove-temp-files.sh" ;;
+            1) run_script "maintenance/check-disk.sh" ;;
+            2) run_script "maintenance/check-permissions.sh" ;;
+            3) run_script "maintenance/fix-permissions.sh" ;;
+            4) run_script "maintenance/backup-config.sh" ;;
+            5) run_script "maintenance/restore-config.sh" ;;
+            6) run_script "diagnostics/kill-stale-procs.sh" ;;
             -1) return ;;
         esac
         echo ""
@@ -406,17 +472,55 @@ menu_maintenance() {
     done
 }
 
-menu_diagnostics() {
+menu_logs() {
     while true; do
         show_banner
-        echo -e "  ${BOLD}${YELLOW}DIAGNOSTICS${NC}"
+        echo -e "  ${BOLD}${YELLOW}LOGS & DIAGNOSTICS${NC}"
         echo ""
         navigate_menu "Back" \
-            "Tail Logs|(live follow)" \
-            "Kill Stale Procs|"
+            "View Logs|(tail -f SystemOut & SystemErr)" \
+            "${CYAN}Log Search${NC}|(grep keyword across all log files)" \
+            "FFDC Summary|(list recent first-failure exceptions)" \
+            "Clear Logs|(truncate SystemOut, SystemErr, FFDC)" \
+            "---Health & Performance" \
+            "${GREEN}Health Check${NC}|(verify ports, processes, disk)" \
+            "Thread Dump|(capture JVM thread snapshot)" \
+            "---Audit" \
+            "View Audit Trail|(show who ran what and when)"
         case $MENU_RESULT in
             0) run_script "diagnostics/tail-logs.sh" ;;
-            1) run_script "diagnostics/kill-stale-procs.sh" ;;
+            1) run_script "diagnostics/log-search.sh" ;;
+            2) run_script "diagnostics/ffdc-summary.sh" ;;
+            3) run_script "maintenance/clear-logs.sh" ;;
+            4) run_script "diagnostics/health-check.sh" ;;
+            5) run_script "diagnostics/thread-dump.sh" ;;
+            6) run_script "diagnostics/view-audit.sh" ;;
+            -1) return ;;
+        esac
+        echo ""
+        read -p "  Press Enter to continue..."
+    done
+}
+
+menu_server_info() {
+    while true; do
+        show_banner
+        echo -e "  ${BOLD}${BLUE}SERVER INFO${NC}"
+        echo ""
+        navigate_menu "Back" \
+            "List Applications|(deployed apps)" \
+            "Server Runtime Info|(PID, heap, threads, uptime)" \
+            "JVM Configuration|(heap, GC, thread pools)" \
+            "Data Sources|(JDBC, JNDI)" \
+            "Virtual Hosts|(host aliases)" \
+            "Ports & Endpoints|(open/closed)"
+        case $MENU_RESULT in
+            0) run_script "admin/list-apps.sh" ;;
+            1) run_script "admin/server-info.sh" ;;
+            2) run_script "admin/show-jvm-config.sh" ;;
+            3) run_script "admin/show-datasources.sh" ;;
+            4) run_script "admin/show-vhosts.sh" ;;
+            5) run_script "admin/show-ports.sh" ;;
             -1) return ;;
         esac
         echo ""
@@ -428,15 +532,20 @@ menu_diagnostics() {
 while true; do
     show_banner
     navigate_menu "Exit" \
-        "${GREEN}Services${NC}|(MQ, WebSphere, App Server)" \
-        "${CYAN}Build & Deploy${NC}|(upgrade, FTP, Ant, deploy)" \
-        "${BRIGHT_WHITE}Maintenance${NC}|(logs, disk, permissions)" \
-        "${YELLOW}Diagnostics${NC}|(tail logs, kill procs)"
+        "${GREEN}Services & Control${NC}|(MQ, WebSphere, App Server)" \
+        "${CYAN}Build & Deploy${NC}|(Ant, FTP, upgrade, deploy)" \
+        "${YELLOW}Logs & Diagnostics${NC}|(search, health, FFDC, threads)" \
+        "${BRIGHT_WHITE}Housekeeping${NC}|(disk, permissions, backup)" \
+        "${BLUE}Server Info${NC}|(apps, JVM, data sources, ports)" \
+        "---EJB Stub Fix" \
+        "${BOLD}${MAGENTA}EJB Deploy (JDK 7)${NC}|(generate EJB stubs & deploy via Java 7)"
     case $MENU_RESULT in
         0) menu_services ;;
         1) menu_deploy ;;
-        2) menu_maintenance ;;
-        3) menu_diagnostics ;;
+        2) menu_logs ;;
+        3) menu_housekeeping ;;
+        4) menu_server_info ;;
+        5) run_script "deploy/ejb-deploy-jdk7.sh" ; echo "" ; read -p "  Press Enter to continue..." ;;
         -1) echo -e "\n  ${BOLD}Exiting...${NC}"; break ;;
     esac
 done

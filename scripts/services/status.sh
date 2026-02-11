@@ -2,13 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-# --- Colors ---
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 print_status() {
     local label="$1"
@@ -38,19 +31,14 @@ print_status "App Server ($APP_SERVER)" "$APP_SERVER"
 # MQ Queue Manager
 echo ""
 echo -e "${BOLD}${CYAN}=== MQ Status ===${NC}"
-if command -v dspmq &>/dev/null; then
-    dspmq_out=$(su -c "dspmq" "$MQ_USER" 2>/dev/null || true)
+if command -v dspmq &>/dev/null || [[ -d /opt/mqm/bin ]]; then
+    local_dspmq="dspmq"
+    command -v dspmq &>/dev/null || local_dspmq="/opt/mqm/bin/dspmq"
+    dspmq_out=$(timeout 10 sudo -u "$MQ_USER" "$local_dspmq" 2>/dev/null || true)
     if [[ -n "$dspmq_out" ]]; then
         echo "$dspmq_out"
     else
-        echo -e "  ${YELLOW}Could not query MQ (dspmq returned empty)${NC}"
-    fi
-elif [[ -d /opt/mqm/bin ]]; then
-    dspmq_out=$(su -c "/opt/mqm/bin/dspmq" "$MQ_USER" 2>/dev/null || true)
-    if [[ -n "$dspmq_out" ]]; then
-        echo "$dspmq_out"
-    else
-        echo -e "  ${YELLOW}Could not query MQ${NC}"
+        echo -e "  ${YELLOW}Could not query MQ (dspmq returned empty or timed out)${NC}"
     fi
 else
     echo -e "  ${YELLOW}MQ not found on this system${NC}"

@@ -2,11 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Kill Stale WebSphere Processes ===${NC}"
@@ -46,7 +41,21 @@ echo -e "${RED}${BOLD}Will kill PIDs:${NC} $pids"
 read -p "Confirm? (y/N): " confirm
 
 if [[ "$confirm" =~ ^[Yy]$ ]]; then
-    echo "$pids" | xargs kill -9
+    echo -e "  Sending SIGTERM (graceful)..."
+    echo "$pids" | xargs kill -15 2>/dev/null || true
+    sleep 5
+    # Check if any are still running, then force kill
+    still_running=""
+    for pid in $pids; do
+        if kill -0 "$pid" 2>/dev/null; then
+            still_running="$still_running $pid"
+        fi
+    done
+    if [[ -n "$still_running" ]]; then
+        echo -e "  ${YELLOW}Processes still alive:${NC}$still_running"
+        echo -e "  Sending SIGKILL (force)..."
+        echo "$still_running" | xargs kill -9 2>/dev/null || true
+    fi
     echo -e "${BOLD}Done.${NC}"
 else
     echo "Aborted."

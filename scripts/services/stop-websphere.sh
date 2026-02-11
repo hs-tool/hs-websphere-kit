@@ -2,10 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-CYAN='\033[96m'
-YELLOW='\033[93m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Stop WebSphere ===${NC}"

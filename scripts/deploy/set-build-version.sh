@@ -2,12 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Set Build Version ===${NC}"
@@ -42,21 +36,25 @@ if [[ -z "$new_name" ]]; then
     exit 0
 fi
 
+# Validate: no spaces, slashes, or shell-special characters
+if [[ "$new_name" =~ [[:space:]/\;\&\|\>\<\$\`] ]]; then
+    echo -e "  ${YELLOW}ERROR: Invalid build name — no spaces or special characters allowed.${NC}"
+    exit 1
+fi
+
 # Comment out the current active line and add the new one
 cd "$DEPLOY_PATH" || { echo "ERROR: Cannot cd to $DEPLOY_PATH"; exit 1; }
 
 # Comment out current active project.name line
 sed -i "s/^project\.name=/#project.name=/" override.properties
 
-# Append new active line after the last project.name block
-sed -i "/^#*project\.name=/{
-    # hold pattern, keep reading
-}" override.properties
-
-# Add the new project.name at the end of the project.name block
-# Find the last line matching #project.name and insert after it
+# Insert new active line after the last project.name entry
 last_line=$(grep -n "^#*project\.name=" override.properties | tail -1 | cut -d: -f1)
-sed -i "${last_line}a project.name=${new_name}" override.properties
+if [[ -n "$last_line" ]]; then
+    sed -i "${last_line}a project.name=${new_name}" override.properties
+else
+    echo "project.name=${new_name}" >> override.properties
+fi
 
 echo ""
 echo -e "${GREEN}${BOLD}  Build version set to: ${new_name}${NC}"

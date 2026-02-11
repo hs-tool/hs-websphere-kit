@@ -2,12 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${CYAN}=== Download Build (FTP) ===${NC}"

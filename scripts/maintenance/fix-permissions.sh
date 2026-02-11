@@ -2,13 +2,6 @@
 source "$(dirname "$0")/../../config.sh"
 set -euo pipefail
 
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
 
 EXPECTED="${WAS_USER}:${WAS_GROUP}"
 
