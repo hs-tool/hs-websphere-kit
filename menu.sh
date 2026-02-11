@@ -412,9 +412,6 @@ menu_deploy() {
         echo -e "  ${BOLD}${CYAN}BUILD & DEPLOY${NC}"
         echo ""
         navigate_menu "Back" \
-            "---EJB Stub Fix" \
-            "${BOLD}${MAGENTA}EJB Deploy (JDK 7)${NC}|(switch to Java 7, generate stubs, deploy)" \
-            "---Build Pipeline" \
             "Run Ant Target|(execute any Ant build target)" \
             "Deploy from Cache|(install from local cache, no FTP)" \
             "Set Build Version|(current: $BUILD_VER)" \
@@ -426,16 +423,15 @@ menu_deploy() {
             "---!Danger Zone" \
             "Teardown WS Apps|(${RED}uninstall all deployed apps${NC})"
         case $MENU_RESULT in
-            0) run_script "deploy/ejb-deploy-jdk7.sh" ;;
-            1) run_script "deploy/run-ant.sh" ;;
-            2) run_script "deploy/deploy-cached.sh" ;;
-            3) run_script "deploy/set-build-version.sh" ;;
-            4) run_script "deploy/configure-java-8.sh" ;;
-            5) run_script "deploy/build-ws-apps.sh" ;;
-            6) run_script "deploy/download-build.sh" ;;
-            7) run_script "deploy/full-upgrade.sh" ;;
-            8) run_script "deploy/e2e-build.sh" ;;
-            9) run_script "deploy/teardown-ws-apps.sh" ;;
+            0) run_script "deploy/run-ant.sh" ;;
+            1) run_script "deploy/deploy-cached.sh" ;;
+            2) run_script "deploy/set-build-version.sh" ;;
+            3) run_script "deploy/configure-java-8.sh" ;;
+            4) run_script "deploy/build-ws-apps.sh" ;;
+            5) run_script "deploy/download-build.sh" ;;
+            6) run_script "deploy/full-upgrade.sh" ;;
+            7) run_script "deploy/e2e-build.sh" ;;
+            8) run_script "deploy/teardown-ws-apps.sh" ;;
             -1) return ;;
         esac
         echo ""
@@ -532,20 +528,20 @@ menu_server_info() {
 while true; do
     show_banner
     navigate_menu "Exit" \
+        "${BOLD}${BRIGHT_YELLOW}One Shot Deploy${NC}|(boot, fix, build — done in one go)" \
+        "---" \
         "${GREEN}Services & Control${NC}|(MQ, WebSphere, App Server)" \
         "${CYAN}Build & Deploy${NC}|(Ant, FTP, upgrade, deploy)" \
         "${YELLOW}Logs & Diagnostics${NC}|(search, health, FFDC, threads)" \
         "${BRIGHT_WHITE}Housekeeping${NC}|(disk, permissions, backup)" \
-        "${BLUE}Server Info${NC}|(apps, JVM, data sources, ports)" \
-        "---EJB Stub Fix" \
-        "${BOLD}${MAGENTA}EJB Deploy (JDK 7)${NC}|(generate EJB stubs & deploy via Java 7)"
+        "${BLUE}Server Info${NC}|(apps, JVM, data sources, ports)"
     case $MENU_RESULT in
-        0) menu_services ;;
-        1) menu_deploy ;;
-        2) menu_logs ;;
-        3) menu_housekeeping ;;
-        4) menu_server_info ;;
-        5) run_script "deploy/ejb-deploy-jdk7.sh" ; echo "" ; read -p "  Press Enter to continue..." ;;
+        0) run_script "deploy/one-shot-deploy.sh" ; echo "" ; read -p "  Press Enter to continue..." ;;
+        1) menu_services ;;
+        2) menu_deploy ;;
+        3) menu_logs ;;
+        4) menu_housekeeping ;;
+        5) menu_server_info ;;
         -1) echo -e "\n  ${BOLD}Exiting...${NC}"; break ;;
     esac
 done
