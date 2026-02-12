@@ -1,6 +1,6 @@
 #!/bin/bash
 source "$(dirname "$0")/../../config.sh"
-set -euo pipefail
+set -uo pipefail
 
 
 ACCEPTED_GROUPS=("${WAS_GROUP}" "users")
