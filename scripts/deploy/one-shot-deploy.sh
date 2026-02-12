@@ -178,15 +178,16 @@ echo -e "  ${BOLD}${YELLOW}━━━ Phase 4: Full Upgrade Build ━━━${NC}"
 
 step "Tearing down existing WAS apps"
 echo -e "          ${DIM}Uninstalling BeanstoreServer and other apps...${NC}"
-if yes y 2>/dev/null | run "deploy/teardown-ws-apps.sh" || true; then
+if (set +o pipefail; yes y 2>/dev/null | run "deploy/teardown-ws-apps.sh") || true; then
     ok "Teardown complete"
 fi
 
 step "Running Full Upgrade (download + deploy)"
 echo -e "          ${DIM}This runs the complete build pipeline.${NC}"
 echo -e "          ${DIM}May take several minutes. Please wait...${NC}"
-# Run in subshell to avoid pipefail killing us when 'yes' gets SIGPIPE
-if (yes y 2>/dev/null | run "deploy/full-upgrade.sh"); then
+# Disable pipefail in subshell — yes gets SIGPIPE (exit 141) when the pipe
+# closes after full-upgrade.sh finishes, which pipefail would treat as failure
+if (set +o pipefail; yes y 2>/dev/null | run "deploy/full-upgrade.sh"); then
     ok "Full upgrade build complete"
 else
     fail "Build failed — check logs"
