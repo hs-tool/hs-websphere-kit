@@ -1,3 +1,16 @@
 *.tar.gz
 copied-from-server/
 server-logs/
+download-logs/
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+dist/
+build/
+coverage/
+.gz
