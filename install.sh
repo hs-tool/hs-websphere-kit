@@ -5,7 +5,7 @@ set -euo pipefail
 # install.sh — Production installer for HS WebSphere Toolkit
 # ============================================================
 # Usage: ./install.sh [--prefix /custom/path]
-# Default: /home/wasadmin/toolkit
+# Default: /home/wasadmin/hs-websphere-kit
 # ============================================================
 
 # Colors only when running in a real terminal
@@ -16,7 +16,7 @@ else
     RED=''; GREEN=''; YELLOW=''; BOLD=''; NC=''
 fi
 
-INSTALL_PREFIX="/home/wasadmin/toolkit"
+INSTALL_PREFIX="/home/wasadmin/hs-websphere-kit"
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION="unknown"
 
@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h|--help)
             echo "Usage: $0 [--prefix /custom/path]"
-            echo "Default install path: /home/wasadmin/toolkit"
+            echo "Default install path: /home/wasadmin/hs-websphere-kit"
             exit 0
             ;;
         *)
@@ -118,7 +118,7 @@ echo -e "  ${GREEN}[OK]${NC} Permissions: 700 dirs/scripts, 600 data"
 # --- Symlink ---
 echo -e "${BOLD}Creating symlink...${NC}"
 
-SYMLINK="/usr/local/bin/toolkit"
+SYMLINK="/usr/local/bin/hs-websphere-kit"
 if ln -sf "$INSTALL_PREFIX/menu.sh" "$SYMLINK" 2>/dev/null; then
     echo -e "  ${GREEN}[OK]${NC} ${SYMLINK} -> ${INSTALL_PREFIX}/menu.sh"
 else

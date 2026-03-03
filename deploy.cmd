@@ -24,7 +24,7 @@ set "NC=%ESC%[0m"
 
 set "PROJECT=john-lewis-partnership-190122"
 set "ZONE=europe-west1-b"
-set "PREFIX=/home/wasadmin/toolkit"
+set "PREFIX=/home/wasadmin/hs-websphere-kit"
 set "SVC_USER=wasadmin"
 set "SVC_PASS=wasadmin"
 set "REPOROOT=%~dp0"

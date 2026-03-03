@@ -24,8 +24,12 @@ set "NC=%ESC%[0m"
 set "PROJECT=john-lewis-partnership-190122"
 set "ZONE=europe-west1-b"
 set "REPOROOT=%~dp0"
-set "LOGDIR=%REPOROOT%downloaded-logs"
+set "LOGDIR=%REPOROOT%server-logs"
 set "HELPER=%REPOROOT%scripts\remote\package-logs.sh"
+set "DIAG_HELPER=%REPOROOT%scripts\remote\collect-diagnostics.sh"
+set "DISK_HELPER=%REPOROOT%scripts\remote\disk-analysis.sh"
+set "SVC_USER=wasadmin"
+set "SVC_PASS=wasadmin"
 
 :: --- Server inventory ---
 set "S1=jlukcgbs01"
@@ -111,9 +115,9 @@ echo     %DIM%Uploading packager...%NC%
 call gcloud compute scp "%HELPER%" "%SRV%:/tmp/package-logs.sh" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
 if errorlevel 1 goto :dl_fail_ssh
 
-:: Run it on server
+:: Run it on server as wasadmin (logs are owned by wasadmin)
 echo     %DIM%Packaging logs + beanstore on server...%NC%
-call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="chmod +x /tmp/package-logs.sh && /tmp/package-logs.sh"
+call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="chmod +x /tmp/package-logs.sh && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash /tmp/package-logs.sh"
 if errorlevel 1 goto :dl_fail_ssh
 
 :: Download tarball
@@ -126,8 +130,44 @@ echo     %DIM%Extracting...%NC%
 tar xzf "%DEST%\was-logs.tar.gz" -C "%DEST%"
 del /q "%DEST%\was-logs.tar.gz" 2>nul
 
-:: Clean up remote
-call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="rm -f /tmp/was-logs.tar.gz /tmp/package-logs.sh"
+:: Collect config diagnostics
+echo     %DIM%Collecting config diagnostics...%NC%
+call gcloud compute scp "%DIAG_HELPER%" "%SRV%:/tmp/collect-diagnostics.sh" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Could not upload diagnostics script%NC%
+    goto :dl_skip_diag
+)
+call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="chmod +x /tmp/collect-diagnostics.sh && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash /tmp/collect-diagnostics.sh"
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Diagnostics collection failed%NC%
+    goto :dl_skip_diag
+)
+call gcloud compute scp "%SRV%:/tmp/was-diagnostics.txt" "%DEST%\was-diagnostics.txt" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Could not download diagnostics report%NC%
+)
+
+:dl_skip_diag
+:: Collect disk usage analysis (runs as root for full visibility)
+echo     %DIM%Analyzing disk usage...%NC%
+call gcloud compute scp "%DISK_HELPER%" "%SRV%:/tmp/disk-analysis.sh" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Could not upload disk analysis script%NC%
+    goto :dl_skip_disk
+)
+call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="chmod +x /tmp/disk-analysis.sh && echo %SVC_PASS% | sudo -S -u %SVC_USER% bash /tmp/disk-analysis.sh"
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Disk analysis failed%NC%
+    goto :dl_skip_disk
+)
+call gcloud compute scp "%SRV%:/tmp/was-disk-analysis.txt" "%DEST%\was-disk-analysis.txt" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet
+if errorlevel 1 (
+    echo     %YELLOW%WARN: Could not download disk analysis report%NC%
+)
+
+:dl_skip_disk
+:: Clean up remote (wasadmin owns the generated files)
+call gcloud compute ssh "%SRV%" --project=%PROJECT% --zone=%ZONE% --tunnel-through-iap --quiet --command="echo %SVC_PASS% | sudo -S -u %SVC_USER% rm -f /tmp/was-logs.tar.gz /tmp/was-diagnostics.txt /tmp/was-disk-analysis.txt /tmp/package-logs.sh /tmp/collect-diagnostics.sh /tmp/disk-analysis.sh"
 
 echo     %GREEN%[OK] %SRV%%NC%
 goto :eof

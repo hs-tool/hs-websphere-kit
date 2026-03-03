@@ -11,8 +11,8 @@ YELLOW='\033[1;33m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-INSTALL_PREFIX="/home/wasadmin/toolkit"
-SYMLINK="/usr/local/bin/toolkit"
+INSTALL_PREFIX="/home/wasadmin/hs-websphere-kit"
+SYMLINK="/usr/local/bin/hs-websphere-kit"
 
 echo ""
 echo -e "${BOLD}HS WebSphere Toolkit Uninstaller${NC}"
